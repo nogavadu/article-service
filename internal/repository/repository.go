@@ -14,7 +14,7 @@ type CropRepository interface {
 
 type CategoryRepository interface {
 	Create(ctx context.Context, info *categoryRepoModel.CategoryInfo) (int, error)
-	GetList(ctx context.Context, cropID int) ([]*categoryRepoModel.Category, error)
+	GetList(ctx context.Context, cropId int) ([]*categoryRepoModel.Category, error)
 	GetAll(ctx context.Context) ([]*categoryRepoModel.Category, error)
 }
 

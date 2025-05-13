@@ -1,10 +1,10 @@
 package model
 
 type Category struct {
-	ID int `db:"id"`
+	ID int `json:"id"`
 	CategoryInfo
 }
 
 type CategoryInfo struct {
-	Name string `db:"name"`
+	Name string `json:"name" validate:"required"`
 }

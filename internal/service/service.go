@@ -10,6 +10,12 @@ type CropService interface {
 	GetAll(ctx context.Context) ([]*model.Crop, error)
 }
 
+type CategoryService interface {
+	Create(ctx context.Context, category *model.CategoryInfo) (int, error)
+	GetList(ctx context.Context, cropId int) ([]*model.Category, error)
+	GetAll(ctx context.Context) ([]*model.Category, error)
+}
+
 type ArticleService interface {
 	Create(
 		ctx context.Context,

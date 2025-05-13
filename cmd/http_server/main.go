@@ -5,11 +5,14 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	articleAPI "github.com/nogavadu/articles-service/internal/api/http/article"
+	categoryAPI "github.com/nogavadu/articles-service/internal/api/http/category"
 	cropAPI "github.com/nogavadu/articles-service/internal/api/http/crop"
 	"github.com/nogavadu/articles-service/internal/config/env"
 	articleRepo "github.com/nogavadu/articles-service/internal/repository/article"
+	categoryRepo "github.com/nogavadu/articles-service/internal/repository/category"
 	cropRepo "github.com/nogavadu/articles-service/internal/repository/crop"
 	articleServ "github.com/nogavadu/articles-service/internal/service/article"
+	categoryServ "github.com/nogavadu/articles-service/internal/service/category"
 	cropServ "github.com/nogavadu/articles-service/internal/service/crop"
 	"log/slog"
 	"net/http"
@@ -50,12 +53,18 @@ func main() {
 	cropService := cropServ.New(log, cropRepository)
 	cropApi := cropAPI.New(cropService)
 
+	categoryRepository := categoryRepo.New(db)
+	categoryService := categoryServ.New(log, categoryRepository)
+	categoryApi := categoryAPI.New(categoryService)
+
 	articleRepository := articleRepo.New(db)
 	articleService := articleServ.New(log, articleRepository)
 	articleApi := articleAPI.New(articleService)
 
 	router.Route("/api", func(r chi.Router) {
 		r.Route("/{crop_id}", func(r chi.Router) {
+			r.Get("/", categoryApi.GetListHandler())
+
 			r.Route("/{category_id}", func(r chi.Router) {
 				r.Get("/", articleApi.GetListHandler())
 				r.Get("/{article_id}", articleApi.GetByIDHandler())
@@ -65,6 +74,11 @@ func main() {
 		r.Route("/crops", func(r chi.Router) {
 			r.Post("/", cropApi.CreateHandler())
 			r.Get("/", cropApi.GetAllHandler())
+		})
+
+		r.Route("/categories", func(r chi.Router) {
+			r.Post("/", categoryApi.CreateHandler())
+			r.Get("/", categoryApi.GetAllHandler())
 		})
 
 		r.Route("/articles", func(r chi.Router) {
