@@ -6,13 +6,12 @@ import (
 	"github.com/nogavadu/articles-service/internal/domain/converter"
 	"github.com/nogavadu/articles-service/internal/domain/model"
 	"github.com/nogavadu/articles-service/internal/repository"
-	repo "github.com/nogavadu/articles-service/internal/repository/article"
+	articleRepo "github.com/nogavadu/articles-service/internal/repository/article"
 	"github.com/nogavadu/articles-service/internal/service"
 	"log/slog"
 )
 
 var (
-	ErrNotFound            = errors.New("article not found")
 	ErrAlreadyExists       = errors.New("article already exists")
 	ErrInvalidArguments    = errors.New("invalid article arguments")
 	ErrInternalServerError = errors.New("internal server error")
@@ -31,32 +30,64 @@ func New(log *slog.Logger, articleRepository repository.ArticleRepository) servi
 	}
 }
 
-func (s *articleService) Create(ctx context.Context, cropID int, categoryID int, articleBody *model.ArticleBody) (int, error) {
+func (s *articleService) Create(ctx context.Context, cropId int, categoryId int, articleBody *model.ArticleBody) (int, error) {
 	const op = "articleService.Create"
 	log := s.log.With(slog.String("op", op))
 
-	articleID, err := s.articleRepo.Create(ctx, cropID, categoryID, converter.ToRepoArticleBody(articleBody))
+	articleId, err := s.articleRepo.Create(ctx, cropId, categoryId, converter.ToRepoArticleBody(articleBody))
 	if err != nil {
-		if errors.Is(err, repo.ErrInvalidArguments) {
+		log.Error("failed to create article", slog.String("error", err.Error()))
+
+		if errors.Is(err, articleRepo.ErrInvalidArguments) {
 			return 0, ErrInvalidArguments
 		}
-		if errors.Is(err, repo.ErrAlreadyExists) {
+		if errors.Is(err, articleRepo.ErrAlreadyExists) {
 			return 0, ErrAlreadyExists
 		}
 
-		log.Error("failed to create article", slog.String("error", err.Error()))
 		return 0, ErrInternalServerError
 	}
 
-	return articleID, nil
+	return articleId, nil
 }
 
-func (s *articleService) GetByID(ctx context.Context, id int) (*model.Article, error) {
-	//TODO implement me
-	panic("implement me")
+func (s *articleService) GetById(ctx context.Context, id int) (*model.Article, error) {
+	const op = "articleService.GetById"
+	log := s.log.With(slog.String("op", op))
+
+	article, err := s.articleRepo.GetById(ctx, id)
+	if err != nil {
+		log.Error("failed to get article", slog.String("error", err.Error()))
+
+		if errors.Is(err, articleRepo.ErrNotFound) {
+			return nil, ErrInvalidArguments
+		}
+
+		return nil, ErrInternalServerError
+	}
+
+	return converter.ToArticle(article), nil
 }
 
-func (s *articleService) GetList(ctx context.Context, cropID int, categoryID int) ([]*model.Article, error) {
-	//TODO implement me
-	panic("implement me")
+func (s *articleService) GetList(ctx context.Context, cropId int, categoryId int) ([]*model.Article, error) {
+	const op = "articleService.GetList"
+	log := s.log.With(slog.String("op", op))
+
+	repoArticles, err := s.articleRepo.GetList(ctx, cropId, categoryId)
+	if err != nil {
+		log.Error("failed to get article list", slog.String("error", err.Error()))
+
+		if errors.Is(err, articleRepo.ErrInvalidArguments) {
+			return nil, ErrInvalidArguments
+		}
+
+		return nil, ErrInternalServerError
+	}
+
+	articles := make([]*model.Article, 0, len(repoArticles))
+	for _, a := range repoArticles {
+		articles = append(articles, converter.ToArticle(a))
+	}
+
+	return articles, nil
 }

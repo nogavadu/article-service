@@ -1,8 +1,8 @@
 package model
 
 type Article struct {
-	ID   uint64 `db:"id"`
-	Body ArticleBody
+	ID uint64 `db:"id"`
+	ArticleBody
 }
 
 type ArticleBody struct {

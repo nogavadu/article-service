@@ -62,15 +62,6 @@ func main() {
 	articleApi := articleAPI.New(articleService)
 
 	router.Route("/api", func(r chi.Router) {
-		r.Route("/{crop_id}", func(r chi.Router) {
-			r.Get("/", categoryApi.GetListHandler())
-
-			r.Route("/{category_id}", func(r chi.Router) {
-				r.Get("/", articleApi.GetListHandler())
-				r.Get("/{article_id}", articleApi.GetByIDHandler())
-			})
-		})
-
 		r.Route("/crops", func(r chi.Router) {
 			r.Post("/", cropApi.CreateHandler())
 			r.Get("/", cropApi.GetAllHandler())
@@ -78,11 +69,14 @@ func main() {
 
 		r.Route("/categories", func(r chi.Router) {
 			r.Post("/", categoryApi.CreateHandler())
+			r.Get("/", categoryApi.GetListHandler())
 			r.Get("/", categoryApi.GetAllHandler())
 		})
 
 		r.Route("/articles", func(r chi.Router) {
 			r.Post("/", articleApi.CreateHandler())
+			r.Get("/", articleApi.GetListHandler())
+			r.Get("/{article_id}", articleApi.GetByIDHandler())
 		})
 	})
 

@@ -19,14 +19,7 @@ type CategoryRepository interface {
 }
 
 type ArticleRepository interface {
-	Create(
-		ctx context.Context,
-		cropID int,
-		categoryID int,
-		article *articleRepoModel.ArticleBody,
-	) (int, error)
-
+	Create(ctx context.Context, cropId int, categoryId int, article *articleRepoModel.ArticleBody) (int, error)
 	GetById(ctx context.Context, id int) (*articleRepoModel.Article, error)
-
-	GetList(ctx context.Context, cropID int, categoryID int) ([]*articleRepoModel.Article, error)
+	GetList(ctx context.Context, cropId int, categoryId int) ([]*articleRepoModel.Article, error)
 }

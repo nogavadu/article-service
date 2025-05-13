@@ -28,9 +28,7 @@ func New(db *pgxpool.Pool) repository.ArticleRepository {
 	}
 }
 
-func (r *articleRepository) Create(ctx context.Context, cropID int, categoryID int, article *articleRepoModel.ArticleBody) (int, error) {
-	const op = "articleRepository.Create"
-
+func (r *articleRepository) Create(ctx context.Context, cropId int, categoryId int, article *articleRepoModel.ArticleBody) (int, error) {
 	query := `
 		INSERT INTO articles(crop_id, category_id, title, text)
 		VALUES ($1, $2, $3, $4)
@@ -39,30 +37,62 @@ func (r *articleRepository) Create(ctx context.Context, cropID int, categoryID i
 
 	var articleId int
 	if err := r.db.QueryRow(ctx, query,
-		cropID, categoryID, article.Title, article.Text,
+		cropId, categoryId, article.Title, article.Text,
 	).Scan(&articleId); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == postgresErrors.AlreadyExistsErrCode {
-				return 0, fmt.Errorf("%s: %w: %w", op, ErrAlreadyExists, err)
+				return 0, fmt.Errorf("%w: %w", ErrAlreadyExists, err)
 			}
 			if pgErr.Code == postgresErrors.InvalidForeignKeyErrCode {
-				return 0, fmt.Errorf("%s: %w: %w", op, ErrInvalidArguments, err)
+				return 0, fmt.Errorf("%w: %w", ErrInvalidArguments, err)
 			}
 		}
 
-		return 0, fmt.Errorf("%s: %w: %w", op, ErrInternalServerError, err)
+		return 0, fmt.Errorf("%w: %w", ErrInternalServerError, err)
 	}
 
 	return articleId, nil
 }
 
 func (r *articleRepository) GetById(ctx context.Context, id int) (*articleRepoModel.Article, error) {
-	//TODO implement me
-	panic("implement me")
+	query := `
+		SELECT id, title, text
+		FROM articles
+		WHERE id = $1;
+	`
+
+	var article articleRepoModel.Article
+	if err := r.db.QueryRow(ctx, query, id).Scan(&article.ID, &article.Title, &article.Text); err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	}
+
+	return &article, nil
 }
 
-func (r *articleRepository) GetList(ctx context.Context, cropID int, categoryID int) ([]*articleRepoModel.Article, error) {
-	//TODO implement me
-	panic("implement me")
+func (r *articleRepository) GetList(ctx context.Context, cropId int, categoryId int) ([]*articleRepoModel.Article, error) {
+	query := `
+		SELECT id, title, text
+		FROM articles
+		WHERE crop_id = $1 AND category_id = $2;
+	`
+
+	rows, err := r.db.Query(ctx, query, cropId, categoryId)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	}
+	defer rows.Close()
+
+	var articles []*articleRepoModel.Article
+	for rows.Next() {
+		var article articleRepoModel.Article
+
+		if err = rows.Scan(&article.ID, &article.Title, &article.Text); err != nil {
+			return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
+		}
+
+		articles = append(articles, &article)
+	}
+
+	return articles, nil
 }

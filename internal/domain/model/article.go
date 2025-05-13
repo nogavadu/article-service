@@ -1,8 +1,8 @@
 package model
 
 type Article struct {
-	ID   uint64       `json:"id"`
-	Body *ArticleBody `json:"body"`
+	Id uint64 `json:"id"`
+	ArticleBody
 }
 
 type ArticleBody struct {

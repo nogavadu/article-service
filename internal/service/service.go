@@ -17,12 +17,7 @@ type CategoryService interface {
 }
 
 type ArticleService interface {
-	Create(
-		ctx context.Context,
-		cropID int,
-		categoryID int,
-		articleBody *model.ArticleBody,
-	) (int, error)
-	GetByID(ctx context.Context, id int) (*model.Article, error)
-	GetList(ctx context.Context, cropID int, categoryID int) ([]*model.Article, error)
+	Create(ctx context.Context, cropId int, categoryId int, articleBody *model.ArticleBody) (int, error)
+	GetById(ctx context.Context, id int) (*model.Article, error)
+	GetList(ctx context.Context, cropId int, categoryId int) ([]*model.Article, error)
 }
