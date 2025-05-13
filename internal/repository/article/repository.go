@@ -6,14 +6,15 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/nogavadu/articles-service/internal/domain/model"
 	"github.com/nogavadu/articles-service/internal/lib/postgresErrors"
 	"github.com/nogavadu/articles-service/internal/repository"
 	articleRepoModel "github.com/nogavadu/articles-service/internal/repository/article/model"
+	"strings"
 )
 
 var (
 	ErrAlreadyExists       = errors.New("article already exists")
-	ErrNotFound            = errors.New("article not found")
 	ErrInvalidArguments    = errors.New("invalid arguments")
 	ErrInternalServerError = errors.New("internal server error")
 )
@@ -70,14 +71,41 @@ func (r *articleRepository) GetById(ctx context.Context, id int) (*articleRepoMo
 	return &article, nil
 }
 
-func (r *articleRepository) GetList(ctx context.Context, cropId int, categoryId int) ([]*articleRepoModel.Article, error) {
+func (r *articleRepository) GetAll(ctx context.Context, params *model.ArticleGetAllParams) ([]*articleRepoModel.Article, error) {
 	query := `
 		SELECT id, title, text
 		FROM articles
-		WHERE crop_id = $1 AND category_id = $2;
+		WHERE true 
 	`
 
-	rows, err := r.db.Query(ctx, query, cropId, categoryId)
+	var args []interface{}
+	var conditions []string
+
+	if params.CropId != nil {
+		conditions = append(conditions, fmt.Sprintf("crop_id = $%d", len(args)+1))
+		args = append(args, *params.CropId)
+	}
+
+	if params.CategoryId != nil {
+		conditions = append(conditions, fmt.Sprintf("category_id = $%d", len(args)+1))
+		args = append(args, *params.CategoryId)
+	}
+
+	if len(conditions) > 0 {
+		query += " AND " + strings.Join(conditions, " AND ")
+	}
+
+	if params.Limit != nil {
+		query += fmt.Sprintf(" LIMIT $%d", len(args)+1)
+		args = append(args, *params.Limit)
+	}
+
+	if params.Offset != nil {
+		query += fmt.Sprintf(" OFFSET $%d", len(args)+1)
+		args = append(args, *params.Offset)
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
 	}

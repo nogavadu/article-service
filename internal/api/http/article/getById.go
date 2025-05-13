@@ -5,7 +5,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/nogavadu/articles-service/internal/domain/model"
-	"github.com/nogavadu/articles-service/internal/lib/response"
+	"github.com/nogavadu/articles-service/internal/lib/api/response"
 	articleServ "github.com/nogavadu/articles-service/internal/service/article"
 	"net/http"
 	"strconv"
@@ -17,7 +17,7 @@ type GetByIDResponse struct {
 
 func (i *Implementation) GetByIDHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		idStr := chi.URLParam(r, "article_id")
+		idStr := chi.URLParam(r, "id")
 		if idStr == "" {
 			response.Err(w, r, "article id is required", http.StatusBadRequest)
 			return

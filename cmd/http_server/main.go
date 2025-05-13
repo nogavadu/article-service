@@ -75,8 +75,8 @@ func main() {
 
 		r.Route("/articles", func(r chi.Router) {
 			r.Post("/", articleApi.CreateHandler())
-			r.Get("/", articleApi.GetListHandler())
-			r.Get("/{article_id}", articleApi.GetByIDHandler())
+			r.Get("/", articleApi.GetAllHandler())
+			r.Get("/{id}", articleApi.GetByIDHandler())
 		})
 	})
 

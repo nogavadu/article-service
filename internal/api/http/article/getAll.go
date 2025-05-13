@@ -1,40 +1,46 @@
-package category
+package article
 
 import (
 	"errors"
 	"github.com/go-chi/render"
 	"github.com/nogavadu/articles-service/internal/domain/model"
 	"github.com/nogavadu/articles-service/internal/lib/api/response"
+	articleService "github.com/nogavadu/articles-service/internal/service/article"
 	"net/http"
 	"strconv"
 )
 
-type getAllResponse struct {
-	Data []*model.Category `json:"data"`
+type getListResponse struct {
+	Data []*model.Article `json:"data"`
 }
 
 func (i *Implementation) GetAllHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		params, err := categoryGetAllQueryParams(r)
+		params, err := articleGetAllQueryParams(r)
 		if err != nil {
 			response.Err(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		categories, err := i.categoryServ.GetAll(r.Context(), params)
+		articles, err := i.articleServ.GetAll(r.Context(), params)
 		if err != nil {
+			if errors.Is(err, articleService.ErrInvalidArguments) {
+				response.Err(w, r, err.Error(), http.StatusBadRequest)
+				return
+			}
+
 			response.Err(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		render.JSON(w, r, &getAllResponse{
-			Data: categories,
+		render.JSON(w, r, getListResponse{
+			Data: articles,
 		})
 	}
 }
 
-func categoryGetAllQueryParams(r *http.Request) (*model.CategoryGetAllParams, error) {
-	options := &model.CategoryGetAllParams{}
+func articleGetAllQueryParams(r *http.Request) (*model.ArticleGetAllParams, error) {
+	options := &model.ArticleGetAllParams{}
 
 	cropIdStr := r.URL.Query().Get("crop_id")
 	if cropIdStr != "" {
@@ -43,6 +49,15 @@ func categoryGetAllQueryParams(r *http.Request) (*model.CategoryGetAllParams, er
 			return nil, errors.New("invalid crop_id query param")
 		}
 		options.CropId = &id
+	}
+
+	categoryIdStr := r.URL.Query().Get("category_id")
+	if categoryIdStr != "" {
+		id, err := strconv.Atoi(categoryIdStr)
+		if err != nil {
+			return nil, errors.New("invalid category_id query param")
+		}
+		options.CategoryId = &id
 	}
 
 	limitStr := r.URL.Query().Get("limit")

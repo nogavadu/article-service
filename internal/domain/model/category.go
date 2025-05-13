@@ -1,5 +1,11 @@
 package model
 
+type CategoryGetAllParams struct {
+	CropId *int
+	Limit  *int
+	Offset *int
+}
+
 type Category struct {
 	ID int `json:"id"`
 	CategoryInfo

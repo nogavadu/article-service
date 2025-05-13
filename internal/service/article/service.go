@@ -51,31 +51,13 @@ func (s *articleService) Create(ctx context.Context, cropId int, categoryId int,
 	return articleId, nil
 }
 
-func (s *articleService) GetById(ctx context.Context, id int) (*model.Article, error) {
-	const op = "articleService.GetById"
+func (s *articleService) GetAll(ctx context.Context, params *model.ArticleGetAllParams) ([]*model.Article, error) {
+	const op = "articleService.GetAll"
 	log := s.log.With(slog.String("op", op))
 
-	article, err := s.articleRepo.GetById(ctx, id)
+	repoArticles, err := s.articleRepo.GetAll(ctx, params)
 	if err != nil {
-		log.Error("failed to get article", slog.String("error", err.Error()))
-
-		if errors.Is(err, articleRepo.ErrNotFound) {
-			return nil, ErrInvalidArguments
-		}
-
-		return nil, ErrInternalServerError
-	}
-
-	return converter.ToArticle(article), nil
-}
-
-func (s *articleService) GetList(ctx context.Context, cropId int, categoryId int) ([]*model.Article, error) {
-	const op = "articleService.GetList"
-	log := s.log.With(slog.String("op", op))
-
-	repoArticles, err := s.articleRepo.GetList(ctx, cropId, categoryId)
-	if err != nil {
-		log.Error("failed to get article list", slog.String("error", err.Error()))
+		log.Error("failed to get articles", slog.String("error", err.Error()))
 
 		if errors.Is(err, articleRepo.ErrInvalidArguments) {
 			return nil, ErrInvalidArguments
@@ -90,4 +72,18 @@ func (s *articleService) GetList(ctx context.Context, cropId int, categoryId int
 	}
 
 	return articles, nil
+}
+
+func (s *articleService) GetById(ctx context.Context, id int) (*model.Article, error) {
+	const op = "articleService.GetById"
+	log := s.log.With(slog.String("op", op))
+
+	article, err := s.articleRepo.GetById(ctx, id)
+	if err != nil {
+		log.Error("failed to get article", slog.String("error", err.Error()))
+
+		return nil, ErrInternalServerError
+	}
+
+	return converter.ToArticle(article), nil
 }

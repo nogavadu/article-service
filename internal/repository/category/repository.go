@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/nogavadu/articles-service/internal/domain/model"
 	"github.com/nogavadu/articles-service/internal/lib/postgresErrors"
 	"github.com/nogavadu/articles-service/internal/repository"
 	categoryRepoModel "github.com/nogavadu/articles-service/internal/repository/category/model"
+	"strings"
 )
 
 var (
@@ -53,37 +55,34 @@ func (c categoryRepository) Create(ctx context.Context, info *categoryRepoModel.
 	return id, nil
 }
 
-func (c categoryRepository) GetList(ctx context.Context, cropID int) ([]*categoryRepoModel.Category, error) {
-	query := `
-		SELECT id, name
-		FROM categories AS cat
-		JOIN crops_categories AS cc ON cc.id = cat.id
-		WHERE cc.crop_id = $1
-	`
-
-	rows, err := c.db.Query(ctx, query, cropID)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
-	}
-	defer rows.Close()
-
-	var categories []*categoryRepoModel.Category
-	for rows.Next() {
-		var cat categoryRepoModel.Category
-		if err = rows.Scan(&cat.ID, &cat.Name); err != nil {
-			return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
-		}
-		categories = append(categories, &cat)
-	}
-
-	return categories, nil
-}
-
-func (c categoryRepository) GetAll(ctx context.Context) ([]*categoryRepoModel.Category, error) {
+func (c categoryRepository) GetAll(ctx context.Context, params *model.CategoryGetAllParams) ([]*categoryRepoModel.Category, error) {
 	query := `
 		SELECT id, name
 		FROM categories
+		WHERE true
 	`
+
+	var args []interface{}
+	var conditions []string
+
+	if params.CropId != nil {
+		conditions = append(conditions, fmt.Sprintf("crop_id = $%d", len(args)+1))
+		args = append(args, *params.CropId)
+	}
+
+	if len(conditions) > 0 {
+		query += " AND " + strings.Join(conditions, " AND ")
+	}
+
+	if params.Limit != nil {
+		query += fmt.Sprintf(" LIMIT $%d", len(args)+1)
+		args = append(args, *params.Limit)
+	}
+
+	if params.Offset != nil {
+		query += fmt.Sprintf(" OFFSET $%d", len(args)+1)
+		args = append(args, *params.Offset)
+	}
 
 	rows, err := c.db.Query(ctx, query)
 	if err != nil {

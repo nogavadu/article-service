@@ -6,6 +6,7 @@ import (
 	"github.com/nogavadu/articles-service/internal/domain/converter"
 	"github.com/nogavadu/articles-service/internal/domain/model"
 	"github.com/nogavadu/articles-service/internal/repository"
+	categoryRepo "github.com/nogavadu/articles-service/internal/repository/category"
 	"github.com/nogavadu/articles-service/internal/service"
 	"log/slog"
 )
@@ -36,7 +37,13 @@ func (s *categoryService) Create(ctx context.Context, categoryInfo *model.Catego
 
 	id, err := s.categoryRepo.Create(ctx, converter.ToRepoCategoryInfo(categoryInfo))
 	if err != nil {
-		// TODO: add repo errors interceptors
+		if errors.Is(err, categoryRepo.ErrInvalidArguments) {
+			return 0, ErrInvalidArguments
+		}
+		if errors.Is(err, categoryRepo.ErrAlreadyExists) {
+			return 0, ErrAlreadyExists
+		}
+
 		log.Error("failed to create category", slog.String("error", err.Error()))
 		return 0, ErrInternalServerError
 	}
@@ -44,32 +51,14 @@ func (s *categoryService) Create(ctx context.Context, categoryInfo *model.Catego
 	return id, nil
 }
 
-func (s *categoryService) GetList(ctx context.Context, cropId int) ([]*model.Category, error) {
-	const op = "category.GetList"
-	log := s.log.With(slog.String("op", op))
-
-	repoCategories, err := s.categoryRepo.GetList(ctx, cropId)
-	if err != nil {
-		// TODO: add repo errors interceptors
-		log.Error("failed to get categories", slog.String("error", err.Error()))
-	}
-
-	categories := make([]*model.Category, 0, len(repoCategories))
-	for _, c := range repoCategories {
-		categories = append(categories, converter.ToCategory(c))
-	}
-
-	return categories, nil
-}
-
-func (s *categoryService) GetAll(ctx context.Context) ([]*model.Category, error) {
+func (s *categoryService) GetAll(ctx context.Context, params *model.CategoryGetAllParams) ([]*model.Category, error) {
 	const op = "category.GetAll"
 	log := s.log.With(slog.String("op", op))
 
-	repoCategories, err := s.categoryRepo.GetAll(ctx)
+	repoCategories, err := s.categoryRepo.GetAll(ctx, params)
 	if err != nil {
-		// TODO: add repo errors interceptors
 		log.Error("failed to get categories", slog.String("error", err.Error()))
+		return nil, ErrInternalServerError
 	}
 
 	categories := make([]*model.Category, 0, len(repoCategories))

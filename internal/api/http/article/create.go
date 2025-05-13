@@ -6,7 +6,7 @@ import (
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 	"github.com/nogavadu/articles-service/internal/domain/model"
-	"github.com/nogavadu/articles-service/internal/lib/response"
+	"github.com/nogavadu/articles-service/internal/lib/api/response"
 	articleServ "github.com/nogavadu/articles-service/internal/service/article"
 	"net/http"
 )
