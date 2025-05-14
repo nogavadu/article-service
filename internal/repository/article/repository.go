@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nogavadu/articles-service/internal/domain/model"
 	"github.com/nogavadu/articles-service/internal/lib/postgresErrors"
 	"github.com/nogavadu/articles-service/internal/repository"
 	articleRepoModel "github.com/nogavadu/articles-service/internal/repository/article/model"
-	"strings"
 )
 
 var (
@@ -29,42 +29,86 @@ func New(db *pgxpool.Pool) repository.ArticleRepository {
 	}
 }
 
-func (r *articleRepository) Create(ctx context.Context, cropId int, categoryId int, article *articleRepoModel.ArticleBody) (int, error) {
-	query := `
-		INSERT INTO articles(crop_id, category_id, title, text)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id;
-	`
+func (r *articleRepository) Create(
+	ctx context.Context,
+	cropId int,
+	categoryId int,
+	article *articleRepoModel.ArticleBody,
+) (int, error) {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("%w: failed to begin transaction: %w", ErrInternalServerError, err)
+	}
+	defer tx.Rollback(ctx)
+
+	query, args, err := sq.
+		Insert("articles").
+		PlaceholderFormat(sq.Dollar).
+		Columns("title", "text").
+		Values(article.Title, article.Text).
+		Suffix("RETURNING id").
+		ToSql()
+	if err != nil {
+		return 0, fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	}
 
 	var articleId int
-	if err := r.db.QueryRow(ctx, query,
-		cropId, categoryId, article.Title, article.Text,
-	).Scan(&articleId); err != nil {
+	if err = tx.QueryRow(ctx, query, args...).Scan(&articleId); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == postgresErrors.AlreadyExistsErrCode {
 				return 0, fmt.Errorf("%w: %w", ErrAlreadyExists, err)
 			}
-			if pgErr.Code == postgresErrors.InvalidForeignKeyErrCode {
-				return 0, fmt.Errorf("%w: %w", ErrInvalidArguments, err)
-			}
 		}
 
-		return 0, fmt.Errorf("%w: %w", ErrInternalServerError, err)
+		return 0, fmt.Errorf("%w: failed to insert article: %w", ErrInternalServerError, err)
+	}
+
+	query, args, err = sq.
+		Insert("article_relations").
+		PlaceholderFormat(sq.Dollar).
+		Columns("crop_id", "category_id", "article_id").
+		Values(cropId, categoryId, articleId).
+		ToSql()
+	if err != nil {
+		return 0, fmt.Errorf("%w: failed to build relation query: %w", ErrInternalServerError, err)
+	}
+
+	_, err = tx.Exec(ctx, query, args...)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == postgresErrors.AlreadyExistsErrCode {
+				return 0, fmt.Errorf("failed to insert relation: %w: %w", ErrAlreadyExists, err)
+			}
+			if pgErr.Code == postgresErrors.InvalidForeignKeyErrCode {
+				return 0, fmt.Errorf("failed to insert relation: %w: %w", ErrInvalidArguments, err)
+			}
+		}
+		return 0, fmt.Errorf("%w: failed to insert relation: %w", ErrInternalServerError, err)
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("%w: failed to commit transaction: %w", ErrInternalServerError, err)
 	}
 
 	return articleId, nil
 }
 
 func (r *articleRepository) GetById(ctx context.Context, id int) (*articleRepoModel.Article, error) {
-	query := `
-		SELECT id, title, text
-		FROM articles
-		WHERE id = $1;
-	`
+	query, args, err := sq.
+		Select("articles").
+		PlaceholderFormat(sq.Dollar).
+		Where(sq.Eq{"id": id}).
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	}
 
 	var article articleRepoModel.Article
-	if err := r.db.QueryRow(ctx, query, id).Scan(&article.ID, &article.Title, &article.Text); err != nil {
+	if err = r.db.QueryRow(ctx, query, args...).Scan(&article.ID, &article.Title, &article.Text); err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
 	}
 
@@ -72,37 +116,39 @@ func (r *articleRepository) GetById(ctx context.Context, id int) (*articleRepoMo
 }
 
 func (r *articleRepository) GetAll(ctx context.Context, params *model.ArticleGetAllParams) ([]*articleRepoModel.Article, error) {
-	query := `
-		SELECT id, title, text
-		FROM articles
-		WHERE true 
-	`
+	builder := sq.
+		Select("a.id, a.title, a.text").
+		PlaceholderFormat(sq.Dollar).
+		From("articles AS a")
 
-	var args []interface{}
-	var conditions []string
-
-	if params.CropId != nil {
-		conditions = append(conditions, fmt.Sprintf("crop_id = $%d", len(args)+1))
-		args = append(args, *params.CropId)
-	}
-
-	if params.CategoryId != nil {
-		conditions = append(conditions, fmt.Sprintf("category_id = $%d", len(args)+1))
-		args = append(args, *params.CategoryId)
-	}
-
-	if len(conditions) > 0 {
-		query += " AND " + strings.Join(conditions, " AND ")
+	if params.CropId != nil && params.CategoryId != nil {
+		builder = builder.Join(
+			"article_relations AS ar ON a.id = ar.article_id AND ar.crop_id = ? AND ar.category_id = ?",
+			*params.CropId, *params.CategoryId,
+		)
+	} else if params.CropId != nil {
+		builder = builder.Join(
+			"article_relations AS ar ON a.id = ar.article_id AND ar.crop_id = ?",
+			*params.CropId,
+		)
+	} else if params.CategoryId != nil {
+		builder = builder.Join(
+			"article_relations AS ar ON a.id = ar.article_id AND ar.category_id = ?",
+			*params.CategoryId,
+		)
 	}
 
 	if params.Limit != nil {
-		query += fmt.Sprintf(" LIMIT $%d", len(args)+1)
-		args = append(args, *params.Limit)
+		builder = builder.Limit(uint64(*params.Limit))
 	}
 
 	if params.Offset != nil {
-		query += fmt.Sprintf(" OFFSET $%d", len(args)+1)
-		args = append(args, *params.Offset)
+		builder = builder.Offset(uint64(*params.Offset))
+	}
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
 	}
 
 	rows, err := r.db.Query(ctx, query, args...)

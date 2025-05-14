@@ -12,7 +12,7 @@ import (
 )
 
 type createRequest struct {
-	*model.CropInfo `json:"crop_info" validate:"required"`
+	model.CropInfo
 }
 
 type createResponse struct {
@@ -32,7 +32,7 @@ func (i *Implementation) CreateHandler() http.HandlerFunc {
 			return
 		}
 
-		id, err := i.cropServ.Create(r.Context(), reqData.CropInfo)
+		id, err := i.cropServ.Create(r.Context(), &reqData.CropInfo)
 		if err != nil {
 			if errors.Is(err, cropServ.ErrAlreadyExists) {
 				response.Err(w, r, err.Error(), http.StatusBadRequest)

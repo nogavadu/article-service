@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nogavadu/articles-service/internal/domain/model"
 	"github.com/nogavadu/articles-service/internal/lib/postgresErrors"
 	"github.com/nogavadu/articles-service/internal/repository"
 	categoryRepoModel "github.com/nogavadu/articles-service/internal/repository/category/model"
-	"strings"
 )
 
 var (
@@ -30,15 +30,17 @@ func New(db *pgxpool.Pool) repository.CategoryRepository {
 	}
 }
 
-func (c categoryRepository) Create(ctx context.Context, info *categoryRepoModel.CategoryInfo) (int, error) {
-	query := `
-		INSERT INTO categories (name)
-		VALUES ($1)
-		RETURNING id
-	`
+func (r *categoryRepository) Create(ctx context.Context, info *categoryRepoModel.CategoryInfo) (int, error) {
+	query, args, err := sq.
+		Insert("categories").
+		PlaceholderFormat(sq.Dollar).
+		Columns("name").
+		Values(info.Name).
+		Suffix("RETURNING id").
+		ToSql()
 
 	var id int
-	if err := c.db.QueryRow(ctx, query, &info.Name).Scan(&id); err != nil {
+	if err = r.db.QueryRow(ctx, query, args...).Scan(&id); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == postgresErrors.AlreadyExistsErrCode {
@@ -55,36 +57,34 @@ func (c categoryRepository) Create(ctx context.Context, info *categoryRepoModel.
 	return id, nil
 }
 
-func (c categoryRepository) GetAll(ctx context.Context, params *model.CategoryGetAllParams) ([]*categoryRepoModel.Category, error) {
-	query := `
-		SELECT id, name
-		FROM categories
-		WHERE true
-	`
-
-	var args []interface{}
-	var conditions []string
+func (r *categoryRepository) GetAll(ctx context.Context, params *model.CategoryGetAllParams) ([]*categoryRepoModel.Category, error) {
+	builder := sq.
+		Select("c.id", "c.name").
+		PlaceholderFormat(sq.Dollar).
+		From("categories AS c")
 
 	if params.CropId != nil {
-		conditions = append(conditions, fmt.Sprintf("crop_id = $%d", len(args)+1))
-		args = append(args, *params.CropId)
+		builder = builder.Join("article_relations AS ar ON c.id = ar.category_id AND ar.crop_id = ?",
+			*params.CropId,
+		)
 	}
 
-	if len(conditions) > 0 {
-		query += " AND " + strings.Join(conditions, " AND ")
-	}
+	builder = builder.GroupBy("c.id", "c.name")
 
 	if params.Limit != nil {
-		query += fmt.Sprintf(" LIMIT $%d", len(args)+1)
-		args = append(args, *params.Limit)
+		builder = builder.Limit(uint64(*params.Limit))
 	}
 
 	if params.Offset != nil {
-		query += fmt.Sprintf(" OFFSET $%d", len(args)+1)
-		args = append(args, *params.Offset)
+		builder = builder.Offset(uint64(*params.Offset))
 	}
 
-	rows, err := c.db.Query(ctx, query)
+	query, args, err := builder.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
 	}
