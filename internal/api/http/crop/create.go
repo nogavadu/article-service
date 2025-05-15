@@ -3,6 +3,7 @@ package crop
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 	"github.com/nogavadu/articles-service/internal/domain/model"
@@ -21,17 +22,23 @@ type createResponse struct {
 
 func (i *Implementation) CreateHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		var reqData createRequest
-		if json.NewDecoder(r.Body).Decode(&reqData) != nil {
-			response.Err(w, r, "invalid request body format", http.StatusBadRequest)
+		if err := json.NewDecoder(r.Body).Decode(&reqData); err != nil {
+			response.Err(w, r, fmt.Sprintf("invalid request body: %s", err), http.StatusBadRequest)
 			return
 		}
 		if err := validator.New().Struct(&reqData); err != nil {
-			response.Err(w, r, "invalid arguments", http.StatusBadRequest)
+			response.Err(w, r, fmt.Sprintf("invalid arguments: %s", err), http.StatusBadRequest)
 			return
 		}
+		if reqData.Img != nil {
+			if err := validator.New().Var(reqData.Img, "url"); err != nil {
+				response.Err(w, r, "invalid image url", http.StatusBadRequest)
+				return
+			}
+		}
 
+		fmt.Printf("API CROP INFO: %s\n", reqData.CropInfo)
 		id, err := i.cropServ.Create(r.Context(), &reqData.CropInfo)
 		if err != nil {
 			if errors.Is(err, cropServ.ErrAlreadyExists) {
@@ -39,7 +46,7 @@ func (i *Implementation) CreateHandler() http.HandlerFunc {
 				return
 			}
 
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			response.Err(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 

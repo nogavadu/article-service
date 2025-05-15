@@ -3,6 +3,7 @@ package crop
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/nogavadu/articles-service/internal/domain/converter"
 	"github.com/nogavadu/articles-service/internal/domain/model"
 	"github.com/nogavadu/articles-service/internal/repository"
@@ -35,13 +36,15 @@ func (s *cropService) Create(ctx context.Context, cropInfo *model.CropInfo) (int
 	const op = "cropService.Create"
 	log := s.log.With(slog.String("op", op))
 
+	fmt.Printf("SERVICE CROP INFO: %s\n", cropInfo)
 	cropID, err := s.cropRepo.Create(ctx, converter.ToRepoCropInfo(cropInfo))
 	if err != nil {
+		log.Error("failed to create crop", slog.String("error", err.Error()))
+
 		if errors.Is(err, crop.ErrAlreadyExists) {
 			return 0, ErrAlreadyExists
 		}
 
-		log.Error("failed to create crop", slog.String("error", err.Error()))
 		return 0, ErrInternalServerError
 	}
 

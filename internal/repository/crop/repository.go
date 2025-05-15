@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	sq "github.com/Masterminds/squirrel"
+	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nogavadu/articles-service/internal/lib/postgresErrors"
 	"github.com/nogavadu/articles-service/internal/repository"
 	cropRepoModel "github.com/nogavadu/articles-service/internal/repository/crop/model"
+	"time"
 )
 
 var (
@@ -28,55 +31,45 @@ func New(db *pgxpool.Pool) repository.CropRepository {
 	}
 }
 
-func (r *cropRepository) Create(ctx context.Context, info *cropRepoModel.CropInfo) (int, error) {
-	const op = "cropRepository.Create"
+func (r *cropRepository) Create(ctx context.Context, cropInfo *cropRepoModel.CropInfo) (int, error) {
+	query, args, err := sq.
+		Insert("crops").
+		PlaceholderFormat(sq.Dollar).
+		Columns("name", "description", "img", "created_at", "updated_at").
+		Values(cropInfo.Name, cropInfo.Description, cropInfo.Img, time.Now(), time.Now()).
+		Suffix("RETURNING id").
+		ToSql()
+	if err != nil {
+		return 0, fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	}
 
-	query := `
-		INSERT INTO crops (name)
-		VALUES ($1)
-		RETURNING id
-   	`
+	fmt.Printf("REPO CROP INFO: %s\n", cropInfo)
+	fmt.Print(query)
 
 	var cropId int
-	if err := r.db.QueryRow(ctx, query, info.Name).Scan(&cropId); err != nil {
+	if err = r.db.QueryRow(ctx, query, args...).Scan(&cropId); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == postgresErrors.AlreadyExistsErrCode {
-				return 0, fmt.Errorf("%s: %w: %w", op, ErrAlreadyExists, err)
+				return 0, fmt.Errorf("%w: %w", ErrAlreadyExists, err)
 			}
 		}
 
-		return 0, fmt.Errorf("%s: %w: %w", op, ErrInternalServerError, err)
+		return 0, fmt.Errorf("%w: %w", ErrInternalServerError, err)
 	}
 
 	return cropId, nil
 }
 
 func (r *cropRepository) GetAll(ctx context.Context) ([]*cropRepoModel.Crop, error) {
-	const op = "cropRepository.GetAll"
-
-	query := `
-		SELECT id, name FROM crops
-	`
-
-	rows, err := r.db.Query(ctx, query)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w: %w", op, ErrInternalServerError, err)
-	}
-	defer rows.Close()
+	query, _, err := sq.
+		Select("id", "name", "description", "img", "created_at", "updated_at").
+		From("crops").
+		ToSql()
 
 	var crops []*cropRepoModel.Crop
-	for rows.Next() {
-		var crop cropRepoModel.Crop
-		var cropInfo cropRepoModel.CropInfo
-
-		if err = rows.Scan(&crop.ID, &cropInfo.Name); err != nil {
-			return nil, fmt.Errorf("%s: %w: %w", op, ErrInternalServerError, err)
-		}
-
-		crop.Info = &cropInfo
-
-		crops = append(crops, &crop)
+	if err = pgxscan.Select(ctx, r.db, &crops, query); err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
 	}
 
 	return crops, nil

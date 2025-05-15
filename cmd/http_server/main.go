@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 	"github.com/jackc/pgx/v5/pgxpool"
 	articleAPI "github.com/nogavadu/articles-service/internal/api/http/article"
 	categoryAPI "github.com/nogavadu/articles-service/internal/api/http/category"
@@ -48,6 +49,14 @@ func main() {
 	log.Info("connected to database")
 
 	router := chi.NewRouter()
+
+	router.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"https://*", "http://*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowCredentials: false,
+		MaxAge:           300, // 5 минут
+	}))
 
 	cropRepository := cropRepo.New(db)
 	cropService := cropServ.New(log, cropRepository)

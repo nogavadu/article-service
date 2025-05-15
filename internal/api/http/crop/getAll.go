@@ -7,7 +7,7 @@ import (
 )
 
 type getAllResponse struct {
-	Crops []*model.Crop `json:"crops"`
+	Data []*model.Crop `json:"data"`
 }
 
 func (i *Implementation) GetAllHandler() http.HandlerFunc {
@@ -19,7 +19,7 @@ func (i *Implementation) GetAllHandler() http.HandlerFunc {
 		}
 
 		render.JSON(w, r, &getAllResponse{
-			Crops: crops,
+			Data: crops,
 		})
 	}
 }
