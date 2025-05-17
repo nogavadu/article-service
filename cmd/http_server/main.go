@@ -74,6 +74,7 @@ func main() {
 		r.Route("/crops", func(r chi.Router) {
 			r.Post("/", cropApi.CreateHandler())
 			r.Get("/", cropApi.GetAllHandler())
+			r.Get("/{cropId}", cropApi.GetByIdHandler())
 		})
 
 		r.Route("/categories", func(r chi.Router) {

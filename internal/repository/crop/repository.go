@@ -74,3 +74,19 @@ func (r *cropRepository) GetAll(ctx context.Context) ([]*cropRepoModel.Crop, err
 
 	return crops, nil
 }
+
+func (r *cropRepository) GetById(ctx context.Context, id int) (*cropRepoModel.Crop, error) {
+	query, args, err := sq.
+		Select("id", "name", "description", "img", "created_at", "updated_at").
+		PlaceholderFormat(sq.Dollar).
+		From("crops").
+		Where(sq.Eq{"id": id}).
+		ToSql()
+
+	var crop cropRepoModel.Crop
+	if err = pgxscan.Get(ctx, r.db, &crop, query, args...); err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	}
+
+	return &crop, nil
+}

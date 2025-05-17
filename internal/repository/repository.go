@@ -10,6 +10,7 @@ import (
 
 type CropRepository interface {
 	Create(ctx context.Context, info *cropRepoModel.CropInfo) (int, error)
+	GetById(ctx context.Context, id int) (*cropRepoModel.Crop, error)
 	GetAll(ctx context.Context) ([]*cropRepoModel.Crop, error)
 }
 

@@ -68,3 +68,16 @@ func (s *cropService) GetAll(ctx context.Context) ([]*model.Crop, error) {
 
 	return crops, nil
 }
+
+func (s *cropService) GetById(ctx context.Context, id int) (*model.Crop, error) {
+	const op = "cropService.GetById"
+	log := s.log.With(slog.String("op", op))
+
+	repoCrop, err := s.cropRepo.GetById(ctx, id)
+	if err != nil {
+		log.Error("failed to get crop", slog.String("error", err.Error()))
+		return nil, ErrInternalServerError
+	}
+
+	return converter.ToCrop(repoCrop), nil
+}
