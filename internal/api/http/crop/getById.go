@@ -16,6 +16,10 @@ type getByIdResponse struct {
 func (i *Implementation) GetByIdHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cropIdStr := chi.URLParam(r, "cropId")
+		if cropIdStr == "" {
+			response.Err(w, r, "crop id is required", http.StatusBadRequest)
+			return
+		}
 		cropId, err := strconv.Atoi(cropIdStr)
 		if err != nil {
 			response.Err(w, r, "invalid crop id", http.StatusBadRequest)
