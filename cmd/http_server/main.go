@@ -80,6 +80,7 @@ func main() {
 		r.Route("/categories", func(r chi.Router) {
 			r.Post("/", categoryApi.CreateHandler())
 			r.Get("/", categoryApi.GetAllHandler())
+			r.Get("/{categoryId}", categoryApi.GetByIdHandler())
 		})
 
 		r.Route("/articles", func(r chi.Router) {

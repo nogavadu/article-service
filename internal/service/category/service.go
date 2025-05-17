@@ -68,3 +68,23 @@ func (s *categoryService) GetAll(ctx context.Context, params *model.CategoryGetA
 
 	return categories, nil
 }
+
+func (s *categoryService) GetById(ctx context.Context, id int) (*model.Category, error) {
+	const op = "category.GetById"
+	log := s.log.With(slog.String("op", op))
+
+	repoCategory, err := s.categoryRepo.GetById(ctx, id)
+	if err != nil {
+		log.Error("failed to get category", slog.String("error", err.Error()))
+		if errors.Is(err, categoryRepo.ErrNotFound) {
+			return nil, ErrNotFound
+		}
+		if errors.Is(err, categoryRepo.ErrInvalidArguments) {
+			return nil, ErrInvalidArguments
+		}
+
+		return nil, ErrInternalServerError
+	}
+
+	return converter.ToCategory(repoCategory), nil
+}

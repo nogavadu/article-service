@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	sq "github.com/Masterminds/squirrel"
+	"github.com/georgysavva/scany/v2/pgxscan"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nogavadu/articles-service/internal/domain/model"
@@ -100,4 +102,27 @@ func (r *categoryRepository) GetAll(ctx context.Context, params *model.CategoryG
 	}
 
 	return categories, nil
+}
+
+func (r *categoryRepository) GetById(ctx context.Context, id int) (*categoryRepoModel.Category, error) {
+	query, args, err := sq.
+		Select("id", "name").
+		PlaceholderFormat(sq.Dollar).
+		From("categories").
+		Where(sq.Eq{"id": id}).
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	}
+
+	var cat categoryRepoModel.Category
+	if err = pgxscan.Get(ctx, r.db, &cat, query, args...); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("%w: %w", ErrNotFound, err)
+		}
+
+		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	}
+
+	return &cat, nil
 }
