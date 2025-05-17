@@ -15,7 +15,9 @@ func ToCategory(category *repoModel.Category) *model.Category {
 	return &model.Category{
 		ID: category.ID,
 		CategoryInfo: model.CategoryInfo{
-			Name: category.Name,
+			Name:        category.Name,
+			Description: category.Description,
+			Icon:        category.Icon,
 		},
 	}
 }

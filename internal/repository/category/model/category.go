@@ -6,5 +6,7 @@ type Category struct {
 }
 
 type CategoryInfo struct {
-	Name string `db:"name"`
+	Name        string  `db:"name"`
+	Description *string `db:"description"`
+	Icon        *string `db:"icon"`
 }

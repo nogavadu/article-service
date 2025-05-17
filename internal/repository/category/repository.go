@@ -61,7 +61,7 @@ func (r *categoryRepository) Create(ctx context.Context, info *categoryRepoModel
 
 func (r *categoryRepository) GetAll(ctx context.Context, params *model.CategoryGetAllParams) ([]*categoryRepoModel.Category, error) {
 	builder := sq.
-		Select("c.id", "c.name").
+		Select("c.id", "c.name", "c.description", "c.icon").
 		PlaceholderFormat(sq.Dollar).
 		From("categories AS c")
 
@@ -92,10 +92,11 @@ func (r *categoryRepository) GetAll(ctx context.Context, params *model.CategoryG
 	}
 	defer rows.Close()
 
+	scanner := pgxscan.NewRowScanner(rows)
 	var categories []*categoryRepoModel.Category
 	for rows.Next() {
 		var cat categoryRepoModel.Category
-		if err = rows.Scan(&cat.ID, &cat.Name); err != nil {
+		if err = scanner.Scan(&cat); err != nil {
 			return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
 		}
 		categories = append(categories, &cat)
@@ -106,7 +107,7 @@ func (r *categoryRepository) GetAll(ctx context.Context, params *model.CategoryG
 
 func (r *categoryRepository) GetById(ctx context.Context, id int) (*categoryRepoModel.Category, error) {
 	query, args, err := sq.
-		Select("id", "name").
+		Select("id", "name", "description", "icon").
 		PlaceholderFormat(sq.Dollar).
 		From("categories").
 		Where(sq.Eq{"id": id}).

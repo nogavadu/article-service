@@ -12,5 +12,7 @@ type Category struct {
 }
 
 type CategoryInfo struct {
-	Name string `json:"name" validate:"required"`
+	Name        string  `json:"name" validate:"required"`
+	Description *string `json:"description,omitempty"`
+	Icon        *string `json:"icon,omitempty"`
 }
