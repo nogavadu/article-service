@@ -33,7 +33,8 @@ func (r *articleRepository) Create(
 	ctx context.Context,
 	cropId int,
 	categoryId int,
-	article *articleRepoModel.ArticleBody,
+	articleBody *articleRepoModel.ArticleBody,
+	images []string,
 ) (int, error) {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
@@ -45,7 +46,7 @@ func (r *articleRepository) Create(
 		Insert("articles").
 		PlaceholderFormat(sq.Dollar).
 		Columns("title", "text").
-		Values(article.Title, article.Text).
+		Values(articleBody.Title, articleBody.Text).
 		Suffix("RETURNING id").
 		ToSql()
 	if err != nil {
@@ -88,6 +89,11 @@ func (r *articleRepository) Create(
 		return 0, fmt.Errorf("%w: failed to insert relation: %w", ErrInternalServerError, err)
 	}
 
+	err = r.createImages(ctx, articleId, images)
+	if err != nil {
+		return 0, fmt.Errorf("%w: failed to insert images: %w", ErrInternalServerError, err)
+	}
+
 	err = tx.Commit(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("%w: failed to commit transaction: %w", ErrInternalServerError, err)
@@ -97,9 +103,16 @@ func (r *articleRepository) Create(
 }
 
 func (r *articleRepository) GetById(ctx context.Context, id int) (*articleRepoModel.Article, error) {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("%w: failed to begin transaction: %w", ErrInternalServerError, err)
+	}
+	defer tx.Rollback(ctx)
+
 	query, args, err := sq.
-		Select("articles").
+		Select("id, title, text").
 		PlaceholderFormat(sq.Dollar).
+		From("articles").
 		Where(sq.Eq{"id": id}).
 		Limit(1).
 		ToSql()
@@ -108,14 +121,31 @@ func (r *articleRepository) GetById(ctx context.Context, id int) (*articleRepoMo
 	}
 
 	var article articleRepoModel.Article
-	if err = r.db.QueryRow(ctx, query, args...).Scan(&article.ID, &article.Title, &article.Text); err != nil {
+	if err = r.db.QueryRow(ctx, query, args...).Scan(&article.Id, &article.Title, &article.Text); err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	}
+
+	images, err := r.getImages(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	article.Images = images
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("%w: failed to commit transaction: %w", ErrInternalServerError, err)
 	}
 
 	return &article, nil
 }
 
 func (r *articleRepository) GetAll(ctx context.Context, params *model.ArticleGetAllParams) ([]*articleRepoModel.Article, error) {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("%w: failed to begin transaction: %w", ErrInternalServerError, err)
+	}
+	defer tx.Rollback(ctx)
+
 	builder := sq.
 		Select("a.id, a.title, a.text").
 		PlaceholderFormat(sq.Dollar).
@@ -161,12 +191,84 @@ func (r *articleRepository) GetAll(ctx context.Context, params *model.ArticleGet
 	for rows.Next() {
 		var article articleRepoModel.Article
 
-		if err = rows.Scan(&article.ID, &article.Title, &article.Text); err != nil {
+		if err = rows.Scan(&article.Id, &article.Title, &article.Text); err != nil {
 			return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
 		}
+
+		images, err := r.getImages(ctx, article.Id)
+		if err != nil {
+			return nil, err
+		}
+		article.Images = images
 
 		articles = append(articles, &article)
 	}
 
+	err = tx.Commit(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("%w: failed to commit transaction: %w", ErrInternalServerError, err)
+	}
+
 	return articles, nil
+}
+
+func (r *articleRepository) createImages(ctx context.Context, articleId int, images []string) error {
+	builder := sq.
+		Insert("article_relations").
+		PlaceholderFormat(sq.Dollar).
+		Columns("article_id", "img")
+
+	for _, image := range images {
+		builder = builder.Values(articleId, image)
+	}
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		return fmt.Errorf("%w: failed to build query: %w", ErrInternalServerError, err)
+	}
+
+	_, err = r.db.Exec(ctx, query, args...)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == postgresErrors.AlreadyExistsErrCode {
+				return fmt.Errorf("%w: failed to insert image: %w", ErrAlreadyExists, err)
+			}
+			if pgErr.Code == postgresErrors.InvalidForeignKeyErrCode {
+				return fmt.Errorf("%w: failed to insert image: %w", ErrInvalidArguments, err)
+			}
+		}
+
+		return fmt.Errorf("%w: failed to insert image: %w", ErrInternalServerError, err)
+	}
+
+	return nil
+}
+
+func (r *articleRepository) getImages(ctx context.Context, articleId int) ([]string, error) {
+	query, args, err := sq.
+		Select("img").
+		PlaceholderFormat(sq.Dollar).
+		From("articles_images").
+		Where(sq.Eq{"article_id": articleId}).
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	}
+	defer rows.Close()
+	var images []string
+	for rows.Next() {
+		var img string
+		if err = rows.Scan(&img); err != nil {
+			return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
+		}
+		images = append(images, img)
+	}
+
+	return images, nil
 }

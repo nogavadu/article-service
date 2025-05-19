@@ -34,7 +34,9 @@ func (s *articleService) Create(ctx context.Context, cropId int, categoryId int,
 	const op = "articleService.Create"
 	log := s.log.With(slog.String("op", op))
 
-	articleId, err := s.articleRepo.Create(ctx, cropId, categoryId, converter.ToRepoArticleBody(articleBody))
+	articleId, err := s.articleRepo.Create(
+		ctx, cropId, categoryId, converter.ToRepoArticleBody(articleBody), articleBody.Images,
+	)
 	if err != nil {
 		log.Error("failed to create article", slog.String("error", err.Error()))
 

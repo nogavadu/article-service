@@ -14,10 +14,11 @@ func ToRepoArticleBody(body *model.ArticleBody) *repoModel.ArticleBody {
 
 func ToArticle(article *repoModel.Article) *model.Article {
 	return &model.Article{
-		Id: article.ID,
+		Id: article.Id,
 		ArticleBody: model.ArticleBody{
-			Title: article.Title,
-			Text:  article.Text,
+			Title:  article.Title,
+			Text:   article.Text,
+			Images: article.Images,
 		},
 	}
 }

@@ -12,7 +12,7 @@ import (
 )
 
 type GetByIDResponse struct {
-	Article model.Article `json:"article"`
+	model.Article
 }
 
 func (i *Implementation) GetByIDHandler() http.HandlerFunc {

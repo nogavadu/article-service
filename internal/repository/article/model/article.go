@@ -1,11 +1,16 @@
 package model
 
+import "time"
+
 type Article struct {
-	ID uint64 `db:"id"`
+	Id int `db:"id"`
 	ArticleBody
+	Images    []string
+	CreatedAt *time.Time `db:"created_at"`
+	UpdatedAt *time.Time `db:"updated_at"`
 }
 
 type ArticleBody struct {
-	Title string `json:"title"`
-	Text  string `json:"text"`
+	Title string `db:"title"`
+	Text  string `db:"text"`
 }
