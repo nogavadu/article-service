@@ -45,6 +45,7 @@ func (p *serviceProvider) HTTPServerConfig() config.HTTPServerConfig {
 	if p.httpServerConfig == nil {
 		httpServerConfig, err := env.NewHTTPServerConfig()
 		if err != nil {
+			p.Logger().Error("failed to get httpServerConfig", slog.String("err", err.Error()))
 			panic(err)
 		}
 		p.httpServerConfig = httpServerConfig
@@ -56,6 +57,7 @@ func (p *serviceProvider) PGConfig() config.PGConfig {
 	if p.pgConfig == nil {
 		pgConfig, err := env.NewPGConfig()
 		if err != nil {
+			p.Logger().Error("failed to get pgConfig", slog.String("err", err.Error()))
 			panic(err)
 		}
 		p.pgConfig = pgConfig
@@ -95,10 +97,12 @@ func (p *serviceProvider) DBClient(ctx context.Context) *pgxpool.Pool {
 	if p.dbClient == nil {
 		dbc, err := pgxpool.New(ctx, p.PGConfig().DSN())
 		if err != nil {
+			p.Logger().Error("failed to create pgx pool", slog.String("err", err.Error()))
 			panic(err)
 		}
 
 		if err = dbc.Ping(ctx); err != nil {
+			p.Logger().Error("failed to ping db", slog.String("err", err.Error()))
 			panic(err)
 		}
 
