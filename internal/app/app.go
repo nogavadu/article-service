@@ -4,15 +4,6 @@ import (
 	"context"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
-	articleAPI "github.com/nogavadu/articles-service/internal/api/http/article"
-	categoryAPI "github.com/nogavadu/articles-service/internal/api/http/category"
-	cropAPI "github.com/nogavadu/articles-service/internal/api/http/crop"
-	articleRepo "github.com/nogavadu/articles-service/internal/repository/article"
-	categoryRepo "github.com/nogavadu/articles-service/internal/repository/category"
-	cropRepo "github.com/nogavadu/articles-service/internal/repository/crop"
-	articleServ "github.com/nogavadu/articles-service/internal/service/article"
-	categoryServ "github.com/nogavadu/articles-service/internal/service/category"
-	cropServ "github.com/nogavadu/articles-service/internal/service/crop"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -58,6 +49,38 @@ func (a *App) initServiceProvider(ctx context.Context) error {
 	return nil
 }
 
+func (a *App) initCropAPI(ctx context.Context, r chi.Router) {
+	cropApi := a.serviceProvider.CropImpl(ctx)
+
+	r.Route("/crops", func(r chi.Router) {
+		r.Post("/", cropApi.CreateHandler())
+		r.Get("/", cropApi.GetAllHandler())
+		r.Get("/{cropId}", cropApi.GetByIdHandler())
+		r.Patch("/{cropId}", cropApi.UpdateHandler())
+	})
+}
+
+func (a *App) initCategoryAPI(ctx context.Context, r chi.Router) {
+	categoryApi := a.serviceProvider.CategoryImpl(ctx)
+
+	r.Route("/categories", func(r chi.Router) {
+		r.Post("/", categoryApi.CreateHandler())
+		r.Get("/", categoryApi.GetAllHandler())
+		r.Get("/{categoryId}", categoryApi.GetByIdHandler())
+		r.Patch("/{categoryId}", categoryApi.UpdateHandler())
+	})
+}
+
+func (a *App) initArticleAPI(ctx context.Context, r chi.Router) {
+	articleApi := a.serviceProvider.ArticleImpl(ctx)
+
+	r.Route("/articles", func(r chi.Router) {
+		r.Post("/", articleApi.CreateHandler())
+		r.Get("/", articleApi.GetAllHandler())
+		r.Get("/{id}", articleApi.GetByIDHandler())
+	})
+}
+
 func (a *App) initHttpServer(ctx context.Context) error {
 	router := chi.NewRouter()
 
@@ -78,44 +101,6 @@ func (a *App) initHttpServer(ctx context.Context) error {
 	a.httpServer = router
 
 	return nil
-}
-
-func (a *App) initCropAPI(ctx context.Context, r chi.Router) {
-	cropRepository := cropRepo.New(a.serviceProvider.DBClient(ctx))
-	cropService := cropServ.New(a.serviceProvider.Logger(), cropRepository)
-	cropApi := cropAPI.New(cropService)
-
-	r.Route("/crops", func(r chi.Router) {
-		r.Post("/", cropApi.CreateHandler())
-		r.Get("/", cropApi.GetAllHandler())
-		r.Get("/{cropId}", cropApi.GetByIdHandler())
-		r.Patch("/{cropId}", cropApi.UpdateHandler())
-	})
-}
-
-func (a *App) initCategoryAPI(ctx context.Context, r chi.Router) {
-	categoryRepository := categoryRepo.New(a.serviceProvider.DBClient(ctx))
-	categoryService := categoryServ.New(a.serviceProvider.Logger(), categoryRepository)
-	categoryApi := categoryAPI.New(categoryService)
-
-	r.Route("/categories", func(r chi.Router) {
-		r.Post("/", categoryApi.CreateHandler())
-		r.Get("/", categoryApi.GetAllHandler())
-		r.Get("/{categoryId}", categoryApi.GetByIdHandler())
-		r.Patch("/{categoryId}", categoryApi.UpdateHandler())
-	})
-}
-
-func (a *App) initArticleAPI(ctx context.Context, r chi.Router) {
-	articleRepository := articleRepo.New(a.serviceProvider.DBClient(ctx))
-	articleService := articleServ.New(a.serviceProvider.Logger(), articleRepository)
-	articleApi := articleAPI.New(articleService)
-
-	r.Route("/articles", func(r chi.Router) {
-		r.Post("/", articleApi.CreateHandler())
-		r.Get("/", articleApi.GetAllHandler())
-		r.Get("/{id}", articleApi.GetByIDHandler())
-	})
 }
 
 func (a *App) runHttpServer() error {
