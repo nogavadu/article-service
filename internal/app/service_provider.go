@@ -6,6 +6,7 @@ import (
 	"github.com/nogavadu/articles-service/internal/api/http/article"
 	"github.com/nogavadu/articles-service/internal/api/http/category"
 	"github.com/nogavadu/articles-service/internal/api/http/crop"
+	"github.com/nogavadu/articles-service/internal/closer"
 	"github.com/nogavadu/articles-service/internal/config"
 	"github.com/nogavadu/articles-service/internal/config/env"
 	"github.com/nogavadu/articles-service/internal/repository"
@@ -105,6 +106,10 @@ func (p *serviceProvider) DBClient(ctx context.Context) *pgxpool.Pool {
 			p.Logger().Error("failed to ping db", slog.String("err", err.Error()))
 			panic(err)
 		}
+		closer.Add(func() error {
+			dbc.Close()
+			return nil
+		})
 
 		p.dbClient = dbc
 	}
