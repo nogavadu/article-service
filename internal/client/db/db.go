@@ -15,7 +15,20 @@ type Client interface {
 type DB interface {
 	SQLExecer
 	Pinger
+	Transactor
 	Close()
+}
+
+// Handler - функция, которая выполняется в транзакции
+type Handler func(ctx context.Context) error
+
+// TxManager менеджер транзакций, который выполняет указанный пользователем обработчик в транзакции
+type TxManager interface {
+	ReadCommitted(ctx context.Context, f Handler) error
+}
+
+type Transactor interface {
+	BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error)
 }
 
 // Query обертка над запросом, хранящая имя запроса и сам запрос

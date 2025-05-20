@@ -7,6 +7,7 @@ import (
 	"github.com/nogavadu/articles-service/internal/api/http/crop"
 	"github.com/nogavadu/articles-service/internal/client/db"
 	"github.com/nogavadu/articles-service/internal/client/db/pg"
+	"github.com/nogavadu/articles-service/internal/client/db/transaction"
 	"github.com/nogavadu/articles-service/internal/config"
 	"github.com/nogavadu/articles-service/internal/config/env"
 	"github.com/nogavadu/articles-service/internal/repository"
@@ -39,7 +40,8 @@ type serviceProvider struct {
 	articleService    service.ArticleService
 	articleRepository repository.ArticleRepository
 
-	dbClient db.Client
+	dbClient  db.Client
+	txManager db.TxManager
 }
 
 func newServiceProvider() *serviceProvider {
@@ -157,4 +159,12 @@ func (p *serviceProvider) DBClient(ctx context.Context) db.Client {
 	}
 
 	return p.dbClient
+}
+
+func (p *serviceProvider) TxManger(ctx context.Context) db.TxManager {
+	if p.txManager == nil {
+		p.txManager = transaction.NewTransactionManager(p.DBClient(ctx).DB())
+	}
+
+	return p.txManager
 }
