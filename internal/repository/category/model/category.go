@@ -10,3 +10,9 @@ type CategoryInfo struct {
 	Description *string `db:"description"`
 	Icon        *string `db:"icon"`
 }
+
+type UpdateInput struct {
+	Name        *string `db:"name"`
+	Description *string `db:"description"`
+	Icon        *string `db:"icon"`
+}

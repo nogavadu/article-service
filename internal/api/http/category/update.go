@@ -1,4 +1,4 @@
-package crop
+package category
 
 import (
 	"encoding/json"
@@ -12,8 +12,8 @@ import (
 	"strconv"
 )
 
-type updateRequest struct {
-	model.UpdateCropInput
+type UpdateRequest struct {
+	model.UpdateCategoryInput
 }
 
 type updateResponse struct {
@@ -22,24 +22,24 @@ type updateResponse struct {
 
 func (i *Implementation) UpdateHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		idStr := chi.URLParam(r, "cropId")
+		idStr := chi.URLParam(r, "categoryId")
 		if idStr == "" {
-			response.Err(w, r, "crop id is required", http.StatusBadRequest)
+			response.Err(w, r, "category id is required", http.StatusBadRequest)
 			return
 		}
 		id, err := strconv.Atoi(idStr)
 		if err != nil {
-			response.Err(w, r, "invalid crop id", http.StatusBadRequest)
+			response.Err(w, r, "category id is invalid", http.StatusBadRequest)
 			return
 		}
 
-		var reqData updateRequest
+		var reqData UpdateRequest
 		if err = json.NewDecoder(r.Body).Decode(&reqData); err != nil {
 			response.Err(w, r, fmt.Sprintf("invalid request body: %s", err), http.StatusBadRequest)
 			return
 		}
 
-		isEmpty, err := request.IsStructEmpty(reqData)
+		isEmpty, err := request.IsStructEmpty(reqData.UpdateCategoryInput)
 		if err != nil {
 			response.Err(w, r, "invalid request body type", http.StatusBadRequest)
 			return
@@ -49,8 +49,8 @@ func (i *Implementation) UpdateHandler() http.HandlerFunc {
 			return
 		}
 
-		if err = i.cropServ.Update(r.Context(), id, &reqData.UpdateCropInput); err != nil {
-			response.Err(w, r, err.Error(), http.StatusInternalServerError)
+		if err = i.categoryServ.Update(r.Context(), id, &reqData.UpdateCategoryInput); err != nil {
+			response.Err(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}
 

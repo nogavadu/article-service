@@ -109,7 +109,7 @@ func (r *cropRepository) Update(ctx context.Context, id int, input *cropRepoMode
 	}
 
 	query, args, err := builder.
-		Set("updated_ad", time.Now()).
+		Set("updated_at", time.Now()).
 		Where(sq.Eq{"id": id}).ToSql()
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrInternalServerError, err)

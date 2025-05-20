@@ -88,3 +88,15 @@ func (s *categoryService) GetById(ctx context.Context, id int) (*model.Category,
 
 	return converter.ToCategory(repoCategory), nil
 }
+
+func (s *categoryService) Update(ctx context.Context, id int, input *model.UpdateCategoryInput) error {
+	const op = "category.Update"
+	log := s.log.With(slog.String("op", op))
+
+	if err := s.categoryRepo.Update(ctx, id, converter.ToRepoCategoryUpdateInput(input)); err != nil {
+		log.Error("failed to update category", slog.String("error", err.Error()))
+		return ErrInternalServerError
+	}
+
+	return nil
+}

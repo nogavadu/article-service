@@ -13,6 +13,7 @@ import (
 	"github.com/nogavadu/articles-service/internal/lib/postgresErrors"
 	"github.com/nogavadu/articles-service/internal/repository"
 	categoryRepoModel "github.com/nogavadu/articles-service/internal/repository/category/model"
+	"time"
 )
 
 var (
@@ -126,4 +127,32 @@ func (r *categoryRepository) GetById(ctx context.Context, id int) (*categoryRepo
 	}
 
 	return &cat, nil
+}
+
+func (r *categoryRepository) Update(ctx context.Context, id int, input *categoryRepoModel.UpdateInput) error {
+	builder := sq.Update("categories").
+		PlaceholderFormat(sq.Dollar)
+
+	if input.Name != nil {
+		builder = builder.Set("name", *input.Name)
+	}
+	if input.Description != nil {
+		builder = builder.Set("description", *input.Description)
+	}
+	if input.Icon != nil {
+		builder = builder.Set("icon", *input.Icon)
+	}
+
+	query, args, err := builder.
+		Set("updated_at", time.Now()).
+		Where(sq.Eq{"id": id}).ToSql()
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	}
+
+	if _, err = r.db.Exec(ctx, query, args...); err != nil {
+		return fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	}
+
+	return nil
 }

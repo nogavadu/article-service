@@ -19,6 +19,7 @@ type CategoryRepository interface {
 	Create(ctx context.Context, info *categoryRepoModel.CategoryInfo) (int, error)
 	GetAll(ctx context.Context, params *model.CategoryGetAllParams) ([]*categoryRepoModel.Category, error)
 	GetById(ctx context.Context, id int) (*categoryRepoModel.Category, error)
+	Update(ctx context.Context, id int, input *categoryRepoModel.UpdateInput) error
 }
 
 type ArticleRepository interface {

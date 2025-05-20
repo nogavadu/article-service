@@ -86,7 +86,7 @@ func (s *cropService) Update(ctx context.Context, id int, input *model.UpdateCro
 	const op = "cropService.Update"
 	log := s.log.With(slog.String("op", op))
 
-	if err := s.cropRepo.Update(ctx, id, converter.ToRepoUpdateInput(input)); err != nil {
+	if err := s.cropRepo.Update(ctx, id, converter.ToRepoCropUpdateInput(input)); err != nil {
 		log.Error("failed to update crop", slog.String("error", err.Error()))
 		return ErrInternalServerError
 	}
