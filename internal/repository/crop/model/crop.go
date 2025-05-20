@@ -15,7 +15,7 @@ type CropInfo struct {
 	Img         *string `db:"img"`
 }
 
-type UpdateCropInput struct {
+type UpdateInput struct {
 	Name        *string `db:"name"`
 	Description *string `db:"description"`
 	Img         *string `db:"img"`

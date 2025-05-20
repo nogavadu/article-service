@@ -94,7 +94,7 @@ func (r *cropRepository) GetById(ctx context.Context, id int) (*cropRepoModel.Cr
 	return &crop, nil
 }
 
-func (r *cropRepository) Update(ctx context.Context, id int, input *cropRepoModel.UpdateCropInput) error {
+func (r *cropRepository) Update(ctx context.Context, id int, input *cropRepoModel.UpdateInput) error {
 	builder := sq.Update("crops").
 		PlaceholderFormat(sq.Dollar)
 
