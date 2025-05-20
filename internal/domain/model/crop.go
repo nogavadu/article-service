@@ -14,3 +14,9 @@ type CropInfo struct {
 	Description *string `json:"description,omitempty"`
 	Img         *string `json:"img,omitempty"`
 }
+
+type UpdateCropInput struct {
+	Name        *string `json:"name,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Img         *string `json:"img,omitempty"`
+}

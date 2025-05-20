@@ -82,6 +82,9 @@ func (r *cropRepository) GetById(ctx context.Context, id int) (*cropRepoModel.Cr
 		From("crops").
 		Where(sq.Eq{"id": id}).
 		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	}
 
 	var crop cropRepoModel.Crop
 	if err = pgxscan.Get(ctx, r.db, &crop, query, args...); err != nil {
@@ -89,4 +92,32 @@ func (r *cropRepository) GetById(ctx context.Context, id int) (*cropRepoModel.Cr
 	}
 
 	return &crop, nil
+}
+
+func (r *cropRepository) Update(ctx context.Context, id int, input *cropRepoModel.UpdateCropInput) error {
+	builder := sq.Update("crops").
+		PlaceholderFormat(sq.Dollar)
+
+	if input.Name != nil {
+		builder = builder.Set("name", *input.Name)
+	}
+	if input.Description != nil {
+		builder = builder.Set("description", *input.Description)
+	}
+	if input.Img != nil {
+		builder = builder.Set("img", *input.Img)
+	}
+
+	query, args, err := builder.
+		Set("updated_ad", time.Now()).
+		Where(sq.Eq{"id": id}).ToSql()
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	}
+
+	if _, err = r.db.Exec(ctx, query, args...); err != nil {
+		return fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	}
+
+	return nil
 }

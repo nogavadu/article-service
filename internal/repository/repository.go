@@ -12,6 +12,7 @@ type CropRepository interface {
 	Create(ctx context.Context, info *cropRepoModel.CropInfo) (int, error)
 	GetAll(ctx context.Context) ([]*cropRepoModel.Crop, error)
 	GetById(ctx context.Context, id int) (*cropRepoModel.Crop, error)
+	Update(ctx context.Context, id int, input *cropRepoModel.UpdateCropInput) error
 }
 
 type CategoryRepository interface {

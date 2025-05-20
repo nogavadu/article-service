@@ -29,3 +29,11 @@ func ToRepoCropInfo(info *model.CropInfo) *repoModel.CropInfo {
 		Img:         info.Img,
 	}
 }
+
+func ToRepoUpdateInput(input *model.UpdateCropInput) *repoModel.UpdateCropInput {
+	return &repoModel.UpdateCropInput{
+		Name:        input.Name,
+		Description: input.Description,
+		Img:         input.Img,
+	}
+}
