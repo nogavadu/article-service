@@ -2,11 +2,11 @@ package app
 
 import (
 	"context"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nogavadu/articles-service/internal/api/http/article"
 	"github.com/nogavadu/articles-service/internal/api/http/category"
 	"github.com/nogavadu/articles-service/internal/api/http/crop"
-	"github.com/nogavadu/articles-service/internal/closer"
+	"github.com/nogavadu/articles-service/internal/client/db"
+	"github.com/nogavadu/articles-service/internal/client/db/pg"
 	"github.com/nogavadu/articles-service/internal/config"
 	"github.com/nogavadu/articles-service/internal/config/env"
 	"github.com/nogavadu/articles-service/internal/repository"
@@ -39,7 +39,7 @@ type serviceProvider struct {
 	articleService    service.ArticleService
 	articleRepository repository.ArticleRepository
 
-	dbClient *pgxpool.Pool
+	dbClient db.Client
 }
 
 func newServiceProvider() *serviceProvider {
@@ -140,22 +140,18 @@ func (p *serviceProvider) ArticleRepository(ctx context.Context) repository.Arti
 	return p.articleRepository
 }
 
-func (p *serviceProvider) DBClient(ctx context.Context) *pgxpool.Pool {
+func (p *serviceProvider) DBClient(ctx context.Context) db.Client {
 	if p.dbClient == nil {
-		dbc, err := pgxpool.New(ctx, p.PGConfig().DSN())
+		dbc, err := pg.New(ctx, p.PGConfig().DSN())
 		if err != nil {
-			p.Logger().Error("failed to create pgx pool", slog.String("err", err.Error()))
+			p.Logger().Error("failed to create dbClient", slog.String("err", err.Error()))
 			panic(err)
 		}
 
-		if err = dbc.Ping(ctx); err != nil {
-			p.Logger().Error("failed to ping db", slog.String("err", err.Error()))
+		if err = dbc.DB().Ping(ctx); err != nil {
+			p.Logger().Error("failed to ping dbClient", slog.String("err", err.Error()))
 			panic(err)
 		}
-		closer.Add(func() error {
-			dbc.Close()
-			return nil
-		})
 
 		p.dbClient = dbc
 	}

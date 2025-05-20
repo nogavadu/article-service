@@ -7,14 +7,14 @@ import (
 
 type CropService interface {
 	Create(ctx context.Context, cropInfo *model.CropInfo) (int, error)
-	GetAll(ctx context.Context) ([]*model.Crop, error)
+	GetAll(ctx context.Context) ([]model.Crop, error)
 	GetById(ctx context.Context, id int) (*model.Crop, error)
 	Update(ctx context.Context, id int, input *model.UpdateCropInput) error
 }
 
 type CategoryService interface {
 	Create(ctx context.Context, category *model.CategoryInfo) (int, error)
-	GetAll(ctx context.Context, params *model.CategoryGetAllParams) ([]*model.Category, error)
+	GetAll(ctx context.Context, params *model.CategoryGetAllParams) ([]model.Category, error)
 	GetById(ctx context.Context, id int) (*model.Category, error)
 	Update(ctx context.Context, id int, input *model.UpdateCategoryInput) error
 }

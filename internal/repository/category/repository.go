@@ -5,10 +5,9 @@ import (
 	"errors"
 	"fmt"
 	sq "github.com/Masterminds/squirrel"
-	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/nogavadu/articles-service/internal/client/db"
 	"github.com/nogavadu/articles-service/internal/domain/model"
 	"github.com/nogavadu/articles-service/internal/lib/postgresErrors"
 	"github.com/nogavadu/articles-service/internal/repository"
@@ -24,26 +23,31 @@ var (
 )
 
 type categoryRepository struct {
-	db *pgxpool.Pool
+	dbc db.Client
 }
 
-func New(db *pgxpool.Pool) repository.CategoryRepository {
+func New(dbc db.Client) repository.CategoryRepository {
 	return &categoryRepository{
-		db: db,
+		dbc: dbc,
 	}
 }
 
 func (r *categoryRepository) Create(ctx context.Context, info *categoryRepoModel.CategoryInfo) (int, error) {
-	query, args, err := sq.
+	queryRaw, args, err := sq.
 		Insert("categories").
 		PlaceholderFormat(sq.Dollar).
-		Columns("name").
-		Values(info.Name).
-		Suffix("RETURNING id").
+		Columns("name", "description", "icon", "created_at", "updated_at").
+		Values(info.Name, info.Description, info.Icon, time.Now(), time.Now()).
+		Suffix(fmt.Sprintf("RETURNING %s", "id")).
 		ToSql()
 
+	query := db.Query{
+		Name:     "categoryRepository.Create",
+		QueryRaw: queryRaw,
+	}
+
 	var id int
-	if err = r.db.QueryRow(ctx, query, args...).Scan(&id); err != nil {
+	if err = r.dbc.DB().ScanOneContext(ctx, &id, query, args...); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == postgresErrors.AlreadyExistsErrCode {
@@ -60,9 +64,9 @@ func (r *categoryRepository) Create(ctx context.Context, info *categoryRepoModel
 	return id, nil
 }
 
-func (r *categoryRepository) GetAll(ctx context.Context, params *model.CategoryGetAllParams) ([]*categoryRepoModel.Category, error) {
+func (r *categoryRepository) GetAll(ctx context.Context, params *model.CategoryGetAllParams) ([]categoryRepoModel.Category, error) {
 	builder := sq.
-		Select("c.id", "c.name", "c.description", "c.icon").
+		Select("c.id", "c.name", "c.description", "c.icon", "c.created_at", "c.updated_at").
 		PlaceholderFormat(sq.Dollar).
 		From("categories AS c")
 
@@ -77,48 +81,47 @@ func (r *categoryRepository) GetAll(ctx context.Context, params *model.CategoryG
 	if params.Limit != nil {
 		builder = builder.Limit(uint64(*params.Limit))
 	}
-
 	if params.Offset != nil {
 		builder = builder.Offset(uint64(*params.Offset))
 	}
 
-	query, args, err := builder.ToSql()
+	queryRaw, args, err := builder.ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
 	}
 
-	rows, err := r.db.Query(ctx, query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	query := db.Query{
+		Name:     "categoryRepository.GetAll",
+		QueryRaw: queryRaw,
 	}
-	defer rows.Close()
 
-	scanner := pgxscan.NewRowScanner(rows)
-	var categories []*categoryRepoModel.Category
-	for rows.Next() {
-		var cat categoryRepoModel.Category
-		if err = scanner.Scan(&cat); err != nil {
-			return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
-		}
-		categories = append(categories, &cat)
+	var categories []categoryRepoModel.Category
+	if err = r.dbc.DB().ScanAllContext(ctx, &categories, query, args...); err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
 	}
 
 	return categories, nil
 }
 
 func (r *categoryRepository) GetById(ctx context.Context, id int) (*categoryRepoModel.Category, error) {
-	query, args, err := sq.
+	queryRaw, args, err := sq.
 		Select("id", "name", "description", "icon").
 		PlaceholderFormat(sq.Dollar).
 		From("categories").
 		Where(sq.Eq{"id": id}).
+		Limit(1).
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
 	}
 
-	var cat categoryRepoModel.Category
-	if err = pgxscan.Get(ctx, r.db, &cat, query, args...); err != nil {
+	query := db.Query{
+		Name:     "categoryRepository.GetById",
+		QueryRaw: queryRaw,
+	}
+
+	var category categoryRepoModel.Category
+	if err = r.dbc.DB().ScanOneContext(ctx, &category, query, args...); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("%w: %w", ErrNotFound, err)
 		}
@@ -126,7 +129,7 @@ func (r *categoryRepository) GetById(ctx context.Context, id int) (*categoryRepo
 		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
 	}
 
-	return &cat, nil
+	return &category, nil
 }
 
 func (r *categoryRepository) Update(ctx context.Context, id int, input *categoryRepoModel.UpdateInput) error {
@@ -143,14 +146,17 @@ func (r *categoryRepository) Update(ctx context.Context, id int, input *category
 		builder = builder.Set("icon", *input.Icon)
 	}
 
-	query, args, err := builder.
-		Set("updated_at", time.Now()).
-		Where(sq.Eq{"id": id}).ToSql()
+	queryRaw, args, err := builder.Set("updated_at", time.Now()).Where(sq.Eq{"id": id}).ToSql()
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrInternalServerError, err)
 	}
 
-	if _, err = r.db.Exec(ctx, query, args...); err != nil {
+	query := db.Query{
+		Name:     "categoryRepository.Update",
+		QueryRaw: queryRaw,
+	}
+
+	if _, err = r.dbc.DB().ExecContext(ctx, query, args...); err != nil {
 		return fmt.Errorf("%w: %w", ErrInternalServerError, err)
 	}
 

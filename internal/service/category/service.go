@@ -51,7 +51,7 @@ func (s *categoryService) Create(ctx context.Context, categoryInfo *model.Catego
 	return id, nil
 }
 
-func (s *categoryService) GetAll(ctx context.Context, params *model.CategoryGetAllParams) ([]*model.Category, error) {
+func (s *categoryService) GetAll(ctx context.Context, params *model.CategoryGetAllParams) ([]model.Category, error) {
 	const op = "category.GetAll"
 	log := s.log.With(slog.String("op", op))
 
@@ -61,9 +61,9 @@ func (s *categoryService) GetAll(ctx context.Context, params *model.CategoryGetA
 		return nil, ErrInternalServerError
 	}
 
-	categories := make([]*model.Category, 0, len(repoCategories))
+	categories := make([]model.Category, 0, len(repoCategories))
 	for _, c := range repoCategories {
-		categories = append(categories, converter.ToCategory(c))
+		categories = append(categories, *converter.ToCategory(&c))
 	}
 
 	return categories, nil

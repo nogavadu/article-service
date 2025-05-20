@@ -10,14 +10,14 @@ import (
 
 type CropRepository interface {
 	Create(ctx context.Context, info *cropRepoModel.CropInfo) (int, error)
-	GetAll(ctx context.Context) ([]*cropRepoModel.Crop, error)
+	GetAll(ctx context.Context) ([]cropRepoModel.Crop, error)
 	GetById(ctx context.Context, id int) (*cropRepoModel.Crop, error)
 	Update(ctx context.Context, id int, input *cropRepoModel.UpdateInput) error
 }
 
 type CategoryRepository interface {
 	Create(ctx context.Context, info *categoryRepoModel.CategoryInfo) (int, error)
-	GetAll(ctx context.Context, params *model.CategoryGetAllParams) ([]*categoryRepoModel.Category, error)
+	GetAll(ctx context.Context, params *model.CategoryGetAllParams) ([]categoryRepoModel.Category, error)
 	GetById(ctx context.Context, id int) (*categoryRepoModel.Category, error)
 	Update(ctx context.Context, id int, input *categoryRepoModel.UpdateInput) error
 }

@@ -51,7 +51,7 @@ func (s *cropService) Create(ctx context.Context, cropInfo *model.CropInfo) (int
 	return cropID, nil
 }
 
-func (s *cropService) GetAll(ctx context.Context) ([]*model.Crop, error) {
+func (s *cropService) GetAll(ctx context.Context) ([]model.Crop, error) {
 	const op = "cropService.GetAll"
 	log := s.log.With(slog.String("op", op))
 
@@ -61,9 +61,9 @@ func (s *cropService) GetAll(ctx context.Context) ([]*model.Crop, error) {
 		return nil, ErrInternalServerError
 	}
 
-	crops := make([]*model.Crop, 0, len(repoCrops))
+	crops := make([]model.Crop, 0, len(repoCrops))
 	for _, repoCrop := range repoCrops {
-		crops = append(crops, converter.ToCrop(repoCrop))
+		crops = append(crops, *converter.ToCrop(&repoCrop))
 	}
 
 	return crops, nil
