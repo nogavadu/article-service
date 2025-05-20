@@ -88,7 +88,9 @@ func (p *serviceProvider) CropImpl(ctx context.Context) *crop.Implementation {
 
 func (p *serviceProvider) CropService(ctx context.Context) service.CropService {
 	if p.cropService == nil {
-		p.cropService = cropServ.New(p.Logger(), p.CropRepository(ctx))
+		p.cropService = cropServ.New(
+			p.Logger(), p.CropRepository(ctx), p.TxManger(ctx),
+		)
 	}
 	return p.cropService
 }
@@ -109,7 +111,9 @@ func (p *serviceProvider) CategoryImpl(ctx context.Context) *category.Implementa
 
 func (p *serviceProvider) CategoryService(ctx context.Context) service.CategoryService {
 	if p.categoryService == nil {
-		p.categoryService = categoryServ.New(p.Logger(), p.CategoryRepository(ctx))
+		p.categoryService = categoryServ.New(
+			p.Logger(), p.CategoryRepository(ctx), p.TxManger(ctx),
+		)
 	}
 	return p.categoryService
 }
@@ -130,7 +134,9 @@ func (p *serviceProvider) ArticleImpl(ctx context.Context) *article.Implementati
 
 func (p *serviceProvider) ArticleService(ctx context.Context) service.ArticleService {
 	if p.articleService == nil {
-		p.articleService = articleServ.New(p.Logger(), p.ArticleRepository(ctx))
+		p.articleService = articleServ.New(
+			p.Logger(), p.ArticleRepository(ctx), p.TxManger(ctx),
+		)
 	}
 	return p.articleService
 }

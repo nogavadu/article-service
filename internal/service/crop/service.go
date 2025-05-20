@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/nogavadu/articles-service/internal/client/db"
 	"github.com/nogavadu/articles-service/internal/domain/converter"
 	"github.com/nogavadu/articles-service/internal/domain/model"
 	"github.com/nogavadu/articles-service/internal/repository"
@@ -22,13 +23,15 @@ var (
 type cropService struct {
 	log *slog.Logger
 
-	cropRepo repository.CropRepository
+	cropRepo  repository.CropRepository
+	txManager db.TxManager
 }
 
-func New(log *slog.Logger, cropRepository repository.CropRepository) service.CropService {
+func New(log *slog.Logger, cropRepository repository.CropRepository, txManager db.TxManager) service.CropService {
 	return &cropService{
-		log:      log,
-		cropRepo: cropRepository,
+		log:       log,
+		cropRepo:  cropRepository,
+		txManager: txManager,
 	}
 }
 

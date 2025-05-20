@@ -3,6 +3,7 @@ package article
 import (
 	"context"
 	"errors"
+	"github.com/nogavadu/articles-service/internal/client/db"
 	"github.com/nogavadu/articles-service/internal/domain/converter"
 	"github.com/nogavadu/articles-service/internal/domain/model"
 	"github.com/nogavadu/articles-service/internal/repository"
@@ -21,12 +22,14 @@ type articleService struct {
 	log *slog.Logger
 
 	articleRepo repository.ArticleRepository
+	txManager   db.TxManager
 }
 
-func New(log *slog.Logger, articleRepository repository.ArticleRepository) service.ArticleService {
+func New(log *slog.Logger, articleRepository repository.ArticleRepository, txManager db.TxManager) service.ArticleService {
 	return &articleService{
 		log:         log,
 		articleRepo: articleRepository,
+		txManager:   txManager,
 	}
 }
 

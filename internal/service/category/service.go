@@ -3,6 +3,7 @@ package category
 import (
 	"context"
 	"errors"
+	"github.com/nogavadu/articles-service/internal/client/db"
 	"github.com/nogavadu/articles-service/internal/domain/converter"
 	"github.com/nogavadu/articles-service/internal/domain/model"
 	"github.com/nogavadu/articles-service/internal/repository"
@@ -22,12 +23,14 @@ type categoryService struct {
 	log *slog.Logger
 
 	categoryRepo repository.CategoryRepository
+	txManager    db.TxManager
 }
 
-func New(log *slog.Logger, categoryRepo repository.CategoryRepository) service.CategoryService {
+func New(log *slog.Logger, categoryRepo repository.CategoryRepository, txManager db.TxManager) service.CategoryService {
 	return &categoryService{
 		log:          log,
 		categoryRepo: categoryRepo,
+		txManager:    txManager,
 	}
 }
 
