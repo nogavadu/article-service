@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
+	"github.com/nogavadu/articles-service/internal/closer"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -25,6 +26,11 @@ func New(ctx context.Context) (*App, error) {
 }
 
 func (a *App) Run() error {
+	defer func() {
+		closer.CloseAll()
+		closer.Wait()
+	}()
+
 	return a.runHttpServer()
 }
 
