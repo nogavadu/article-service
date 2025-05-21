@@ -63,6 +63,7 @@ func (a *App) initCropAPI(ctx context.Context, r chi.Router) {
 		r.Get("/", cropApi.GetAllHandler())
 		r.Get("/{cropId}", cropApi.GetByIdHandler())
 		r.Patch("/{cropId}", cropApi.UpdateHandler())
+		r.Delete("/{cropId}", cropApi.DeleteHandler())
 	})
 }
 
@@ -74,6 +75,7 @@ func (a *App) initCategoryAPI(ctx context.Context, r chi.Router) {
 		r.Get("/", categoryApi.GetAllHandler())
 		r.Get("/{categoryId}", categoryApi.GetByIdHandler())
 		r.Patch("/{categoryId}", categoryApi.UpdateHandler())
+		r.Delete("/{categoryId}", categoryApi.DeleteHandler())
 	})
 }
 
@@ -84,7 +86,8 @@ func (a *App) initArticleAPI(ctx context.Context, r chi.Router) {
 		r.Post("/", articleApi.CreateHandler())
 		r.Get("/", articleApi.GetAllHandler())
 		r.Get("/{articleId}", articleApi.GetByIDHandler())
-		r.Patch("/{articleId}", articleApi.Update())
+		r.Patch("/{articleId}", articleApi.UpdateHandler())
+		r.Delete("/{articleId}", articleApi.DeleteHandler())
 	})
 }
 

@@ -179,3 +179,16 @@ func (s *articleService) Update(ctx context.Context, id int, input *model.Articl
 
 	return err
 }
+
+func (s *articleService) Delete(ctx context.Context, id int) error {
+	const op = "articleService.Delete"
+	log := s.log.With(slog.String("op", op))
+
+	err := s.articleRepo.Delete(ctx, id)
+	if err != nil {
+		log.Error("failed to delete article", slog.String("error", err.Error()))
+		return ErrInternalServerError
+	}
+
+	return nil
+}

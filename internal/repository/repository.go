@@ -12,6 +12,7 @@ type CropRepository interface {
 	GetAll(ctx context.Context) ([]cropRepoModel.Crop, error)
 	GetById(ctx context.Context, id int) (*cropRepoModel.Crop, error)
 	Update(ctx context.Context, id int, input *cropRepoModel.UpdateInput) error
+	Delete(ctx context.Context, id int) error
 }
 
 type CategoryRepository interface {
@@ -19,6 +20,7 @@ type CategoryRepository interface {
 	GetAll(ctx context.Context, params *categoryRepoModel.CategoryGetAllParams) ([]categoryRepoModel.Category, error)
 	GetById(ctx context.Context, id int) (*categoryRepoModel.Category, error)
 	Update(ctx context.Context, id int, input *categoryRepoModel.UpdateInput) error
+	Delete(ctx context.Context, id int) error
 }
 
 type ArticleRepository interface {
@@ -26,6 +28,7 @@ type ArticleRepository interface {
 	GetAll(ctx context.Context, params *articleRepoModel.ArticleGetAllParams) ([]articleRepoModel.Article, error)
 	GetById(ctx context.Context, id int) (*articleRepoModel.Article, error)
 	Update(ctx context.Context, id int, input *articleRepoModel.UpdateInput) error
+	Delete(ctx context.Context, id int) error
 }
 
 type ArticleRelationsRepository interface {

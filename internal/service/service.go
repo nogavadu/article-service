@@ -10,6 +10,7 @@ type CropService interface {
 	GetAll(ctx context.Context) ([]model.Crop, error)
 	GetById(ctx context.Context, id int) (*model.Crop, error)
 	Update(ctx context.Context, id int, input *model.UpdateCropInput) error
+	Delete(ctx context.Context, id int) error
 }
 
 type CategoryService interface {
@@ -17,6 +18,7 @@ type CategoryService interface {
 	GetAll(ctx context.Context, params *model.CategoryGetAllParams) ([]model.Category, error)
 	GetById(ctx context.Context, id int) (*model.Category, error)
 	Update(ctx context.Context, id int, input *model.UpdateCategoryInput) error
+	Delete(ctx context.Context, id int) error
 }
 
 type ArticleService interface {
@@ -24,4 +26,5 @@ type ArticleService interface {
 	GetAll(ctx context.Context, params *model.ArticleGetAllParams) ([]model.Article, error)
 	GetById(ctx context.Context, id int) (*model.Article, error)
 	Update(ctx context.Context, id int, input *model.ArticleUpdateInput) error
+	Delete(ctx context.Context, id int) error
 }

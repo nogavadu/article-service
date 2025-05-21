@@ -169,3 +169,24 @@ func (r *articleRepository) Update(ctx context.Context, id int, input *articleRe
 
 	return nil
 }
+
+func (r *articleRepository) Delete(ctx context.Context, id int) error {
+	queryRaw, args, err := sq.
+		Delete("articles").
+		Where(sq.Eq{"id": id}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build query: %s: %w", ErrInternalServerError, err)
+	}
+
+	query := db.Query{
+		Name:     "articleRepository.Delete",
+		QueryRaw: queryRaw,
+	}
+
+	if _, err = r.dbc.DB().ExecContext(ctx, query, args...); err != nil {
+		return fmt.Errorf("failed to delete article: %s: %w", ErrInternalServerError, err)
+	}
+
+	return nil
+}

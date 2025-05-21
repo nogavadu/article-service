@@ -103,3 +103,15 @@ func (s *categoryService) Update(ctx context.Context, id int, input *model.Updat
 
 	return nil
 }
+
+func (s *categoryService) Delete(ctx context.Context, id int) error {
+	const op = "category.Delete"
+	log := s.log.With(slog.String("op", op))
+
+	if err := s.categoryRepo.Delete(ctx, id); err != nil {
+		log.Error("failed to delete category", slog.String("error", err.Error()))
+		return ErrInternalServerError
+	}
+
+	return nil
+}

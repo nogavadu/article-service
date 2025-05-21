@@ -19,7 +19,7 @@ type UpdateResponse struct {
 	Status string `json:"status"`
 }
 
-func (i *Implementation) Update() http.HandlerFunc {
+func (i *Implementation) UpdateHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		idStr := chi.URLParam(r, "articleId")
 		if idStr == "" {

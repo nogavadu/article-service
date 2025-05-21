@@ -138,3 +138,24 @@ func (r *cropRepository) Update(ctx context.Context, id int, input *cropRepoMode
 
 	return nil
 }
+
+func (r *cropRepository) Delete(ctx context.Context, id int) error {
+	queryRaw, args, err := sq.
+		Delete("crops").
+		Where(sq.Eq{"id": id}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	}
+
+	query := db.Query{
+		Name:     "cropRepository.Delete",
+		QueryRaw: queryRaw,
+	}
+
+	if _, err = r.dbc.DB().ExecContext(ctx, query, args...); err != nil {
+		return fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	}
+
+	return nil
+}

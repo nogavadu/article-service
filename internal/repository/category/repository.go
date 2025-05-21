@@ -164,3 +164,24 @@ func (r *categoryRepository) Update(ctx context.Context, id int, input *category
 
 	return nil
 }
+
+func (r *categoryRepository) Delete(ctx context.Context, id int) error {
+	queryRaw, args, err := sq.
+		Delete("categories").
+		Where(sq.Eq{"id": id}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	}
+
+	query := db.Query{
+		Name:     "categoryRepository.Delete",
+		QueryRaw: queryRaw,
+	}
+
+	if _, err = r.dbc.DB().ExecContext(ctx, query, args...); err != nil {
+		return fmt.Errorf("%w: %w", ErrInternalServerError, err)
+	}
+
+	return nil
+}

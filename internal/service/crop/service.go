@@ -96,3 +96,15 @@ func (s *cropService) Update(ctx context.Context, id int, input *model.UpdateCro
 
 	return nil
 }
+
+func (s *cropService) Delete(ctx context.Context, id int) error {
+	const op = "cropService.Delete"
+	log := s.log.With(slog.String("op", op))
+
+	if err := s.cropRepo.Delete(ctx, id); err != nil {
+		log.Error("failed to delete crop", slog.String("error", err.Error()))
+		return ErrInternalServerError
+	}
+
+	return nil
+}
