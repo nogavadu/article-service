@@ -2,6 +2,12 @@ package model
 
 import "time"
 
+type CategoryGetAllParams struct {
+	CropId *int
+	Limit  *int
+	Offset *int
+}
+
 type Category struct {
 	ID int `db:"id"`
 	CategoryInfo

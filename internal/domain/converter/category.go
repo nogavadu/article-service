@@ -22,6 +22,14 @@ func ToRepoCategoryInfo(categoryInfo *model.CategoryInfo) *repoModel.CategoryInf
 	}
 }
 
+func ToRepoCategoryGetAllParams(params *model.CategoryGetAllParams) *repoModel.CategoryGetAllParams {
+	return &repoModel.CategoryGetAllParams{
+		CropId: params.CropId,
+		Limit:  params.Limit,
+		Offset: params.Offset,
+	}
+}
+
 func ToRepoCategoryUpdateInput(input *model.UpdateCategoryInput) *repoModel.UpdateInput {
 	return &repoModel.UpdateInput{
 		Name:        input.Name,

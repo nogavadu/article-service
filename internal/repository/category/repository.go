@@ -8,7 +8,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/nogavadu/articles-service/internal/client/db"
-	"github.com/nogavadu/articles-service/internal/domain/model"
 	"github.com/nogavadu/articles-service/internal/lib/postgresErrors"
 	"github.com/nogavadu/articles-service/internal/repository"
 	categoryRepoModel "github.com/nogavadu/articles-service/internal/repository/category/model"
@@ -64,14 +63,17 @@ func (r *categoryRepository) Create(ctx context.Context, info *categoryRepoModel
 	return id, nil
 }
 
-func (r *categoryRepository) GetAll(ctx context.Context, params *model.CategoryGetAllParams) ([]categoryRepoModel.Category, error) {
+func (r *categoryRepository) GetAll(
+	ctx context.Context,
+	params *categoryRepoModel.CategoryGetAllParams,
+) ([]categoryRepoModel.Category, error) {
 	builder := sq.
 		Select("c.id", "c.name", "c.description", "c.icon", "c.created_at", "c.updated_at").
 		PlaceholderFormat(sq.Dollar).
 		From("categories AS c")
 
 	if params.CropId != nil {
-		builder = builder.Join("article_relations AS ar ON c.id = ar.category_id AND ar.crop_id = ?",
+		builder = builder.Join("articles_relations AS ar ON c.id = ar.category_id AND ar.crop_id = ?",
 			*params.CropId,
 		)
 	}

@@ -7,7 +7,7 @@ import (
 )
 
 type getAllResponse struct {
-	Data []*model.Crop `json:"data"`
+	Data []model.Crop `json:"data"`
 }
 
 func (i *Implementation) GetAllHandler() http.HandlerFunc {

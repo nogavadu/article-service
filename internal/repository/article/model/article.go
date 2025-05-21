@@ -2,10 +2,16 @@ package model
 
 import "time"
 
+type ArticleGetAllParams struct {
+	CropId     *int
+	CategoryId *int
+	Limit      *int
+	Offset     *int
+}
+
 type Article struct {
 	Id int `db:"id"`
 	ArticleBody
-	Images    []string
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }

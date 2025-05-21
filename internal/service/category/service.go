@@ -58,7 +58,7 @@ func (s *categoryService) GetAll(ctx context.Context, params *model.CategoryGetA
 	const op = "category.GetAll"
 	log := s.log.With(slog.String("op", op))
 
-	repoCategories, err := s.categoryRepo.GetAll(ctx, params)
+	repoCategories, err := s.categoryRepo.GetAll(ctx, converter.ToRepoCategoryGetAllParams(params))
 	if err != nil {
 		log.Error("failed to get categories", slog.String("error", err.Error()))
 		return nil, ErrInternalServerError

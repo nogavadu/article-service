@@ -21,15 +21,26 @@ var (
 type articleService struct {
 	log *slog.Logger
 
-	articleRepo repository.ArticleRepository
-	txManager   db.TxManager
+	articleRepo          repository.ArticleRepository
+	articleImagesRepo    repository.ArticleImagesRepository
+	articleRelationsRepo repository.ArticleRelationsRepository
+
+	txManager db.TxManager
 }
 
-func New(log *slog.Logger, articleRepository repository.ArticleRepository, txManager db.TxManager) service.ArticleService {
+func New(
+	log *slog.Logger,
+	articleRepository repository.ArticleRepository,
+	articleImagesRepo repository.ArticleImagesRepository,
+	articleRelationsRepo repository.ArticleRelationsRepository,
+	txManager db.TxManager,
+) service.ArticleService {
 	return &articleService{
-		log:         log,
-		articleRepo: articleRepository,
-		txManager:   txManager,
+		log:                  log,
+		articleRepo:          articleRepository,
+		articleImagesRepo:    articleImagesRepo,
+		articleRelationsRepo: articleRelationsRepo,
+		txManager:            txManager,
 	}
 }
 
@@ -37,58 +48,99 @@ func (s *articleService) Create(ctx context.Context, cropId int, categoryId int,
 	const op = "articleService.Create"
 	log := s.log.With(slog.String("op", op))
 
-	articleId, err := s.articleRepo.Create(
-		ctx, cropId, categoryId, converter.ToRepoArticleBody(articleBody), articleBody.Images,
-	)
-	if err != nil {
-		log.Error("failed to create article", slog.String("error", err.Error()))
+	var articleId int
+	err := s.txManager.ReadCommitted(ctx, func(ctx context.Context) error {
+		var errTx error
+		defer func() {
+			if errTx != nil {
+				log.Error("failed to create article", slog.String("error", errTx.Error()))
+			}
+		}()
 
-		if errors.Is(err, articleRepo.ErrInvalidArguments) {
-			return 0, ErrInvalidArguments
+		articleId, errTx = s.articleRepo.Create(ctx, converter.ToRepoArticleBody(articleBody))
+		if errTx != nil {
+			if errors.Is(errTx, articleRepo.ErrAlreadyExists) {
+				return ErrAlreadyExists
+			}
+
+			return ErrInternalServerError
 		}
-		if errors.Is(err, articleRepo.ErrAlreadyExists) {
-			return 0, ErrAlreadyExists
+
+		if len(articleBody.Images) > 0 {
+			if errTx = s.articleImagesRepo.CreateBulk(ctx, articleId, articleBody.Images); errTx != nil {
+				return ErrInternalServerError
+			}
 		}
 
-		return 0, ErrInternalServerError
-	}
+		if errTx = s.articleRelationsRepo.Create(ctx, cropId, categoryId, articleId); errTx != nil {
+			return ErrInternalServerError
+		}
 
-	return articleId, nil
+		return nil
+	})
+
+	return articleId, err
 }
 
-func (s *articleService) GetAll(ctx context.Context, params *model.ArticleGetAllParams) ([]*model.Article, error) {
+func (s *articleService) GetAll(ctx context.Context, params *model.ArticleGetAllParams) ([]model.Article, error) {
 	const op = "articleService.GetAll"
 	log := s.log.With(slog.String("op", op))
 
-	repoArticles, err := s.articleRepo.GetAll(ctx, params)
-	if err != nil {
-		log.Error("failed to get articles", slog.String("error", err.Error()))
+	var articles []model.Article
+	err := s.txManager.ReadCommitted(ctx, func(ctx context.Context) error {
+		var errTx error
+		defer func() {
+			if errTx != nil {
+				log.Error("failed to get articles", slog.String("error", errTx.Error()))
+			}
+		}()
 
-		if errors.Is(err, articleRepo.ErrInvalidArguments) {
-			return nil, ErrInvalidArguments
+		repoArticles, errTx := s.articleRepo.GetAll(ctx, converter.ToRepoArticleGetAllParams(params))
+		if errTx != nil {
+			return ErrInternalServerError
 		}
 
-		return nil, ErrInternalServerError
-	}
+		for _, a := range repoArticles {
+			imgs, errTx := s.articleImagesRepo.GetAll(ctx, a.Id)
+			if errTx != nil {
+				return ErrInternalServerError
+			}
+			articles = append(articles, *converter.ToArticle(&a, imgs))
+		}
 
-	articles := make([]*model.Article, 0, len(repoArticles))
-	for _, a := range repoArticles {
-		articles = append(articles, converter.ToArticle(a))
-	}
+		return nil
+	})
 
-	return articles, nil
+	return articles, err
 }
 
 func (s *articleService) GetById(ctx context.Context, id int) (*model.Article, error) {
 	const op = "articleService.GetById"
 	log := s.log.With(slog.String("op", op))
 
-	article, err := s.articleRepo.GetById(ctx, id)
-	if err != nil {
-		log.Error("failed to get article", slog.String("error", err.Error()))
+	var article *model.Article
+	err := s.txManager.ReadCommitted(ctx, func(ctx context.Context) error {
+		var errTx error
+		defer func() {
+			if errTx != nil {
+				log.Error("failed to get articles", slog.String("error", errTx.Error()))
+			}
+		}()
 
-		return nil, ErrInternalServerError
-	}
+		repoArticle, errTx := s.articleRepo.GetById(ctx, id)
+		if errTx != nil {
+			return ErrInternalServerError
+		}
 
-	return converter.ToArticle(article), nil
+		images, errTx := s.articleImagesRepo.GetAll(ctx, repoArticle.Id)
+		if errTx != nil {
+			return ErrInternalServerError
+		}
+
+		article = converter.ToArticle(repoArticle, images)
+
+		return nil
+	})
+
+	return article, err
 }

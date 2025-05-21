@@ -11,7 +11,7 @@ import (
 )
 
 type getListResponse struct {
-	Data []*model.Article `json:"data"`
+	Data []model.Article `json:"data"`
 }
 
 func (i *Implementation) GetAllHandler() http.HandlerFunc {

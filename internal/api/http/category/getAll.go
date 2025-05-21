@@ -10,7 +10,7 @@ import (
 )
 
 type getAllResponse struct {
-	Data []*model.Category `json:"data"`
+	Data []model.Category `json:"data"`
 }
 
 func (i *Implementation) GetAllHandler() http.HandlerFunc {

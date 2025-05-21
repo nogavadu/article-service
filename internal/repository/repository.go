@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"github.com/nogavadu/articles-service/internal/domain/model"
 	articleRepoModel "github.com/nogavadu/articles-service/internal/repository/article/model"
 	categoryRepoModel "github.com/nogavadu/articles-service/internal/repository/category/model"
 	cropRepoModel "github.com/nogavadu/articles-service/internal/repository/crop/model"
@@ -17,19 +16,23 @@ type CropRepository interface {
 
 type CategoryRepository interface {
 	Create(ctx context.Context, info *categoryRepoModel.CategoryInfo) (int, error)
-	GetAll(ctx context.Context, params *model.CategoryGetAllParams) ([]categoryRepoModel.Category, error)
+	GetAll(ctx context.Context, params *categoryRepoModel.CategoryGetAllParams) ([]categoryRepoModel.Category, error)
 	GetById(ctx context.Context, id int) (*categoryRepoModel.Category, error)
 	Update(ctx context.Context, id int, input *categoryRepoModel.UpdateInput) error
 }
 
 type ArticleRepository interface {
-	Create(
-		ctx context.Context,
-		cropId int,
-		categoryId int,
-		articleBody *articleRepoModel.ArticleBody,
-		images []string,
-	) (int, error)
-	GetAll(ctx context.Context, params *model.ArticleGetAllParams) ([]*articleRepoModel.Article, error)
+	Create(ctx context.Context, articleBody *articleRepoModel.ArticleBody) (int, error)
+	GetAll(ctx context.Context, params *articleRepoModel.ArticleGetAllParams) ([]articleRepoModel.Article, error)
 	GetById(ctx context.Context, id int) (*articleRepoModel.Article, error)
+}
+
+type ArticleRelationsRepository interface {
+	Create(ctx context.Context, cropId int, categoryId int, articleId int) error
+}
+
+type ArticleImagesRepository interface {
+	CreateBulk(ctx context.Context, articleId int, images []string) error
+	GetAll(ctx context.Context, articleId int) ([]string, error)
+	DeleteBulk(ctx context.Context, articleId int) error
 }

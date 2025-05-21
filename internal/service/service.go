@@ -21,6 +21,6 @@ type CategoryService interface {
 
 type ArticleService interface {
 	Create(ctx context.Context, cropId int, categoryId int, articleBody *model.ArticleBody) (int, error)
-	GetAll(ctx context.Context, params *model.ArticleGetAllParams) ([]*model.Article, error)
+	GetAll(ctx context.Context, params *model.ArticleGetAllParams) ([]model.Article, error)
 	GetById(ctx context.Context, id int) (*model.Article, error)
 }

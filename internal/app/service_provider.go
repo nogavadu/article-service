@@ -12,6 +12,8 @@ import (
 	"github.com/nogavadu/articles-service/internal/config/env"
 	"github.com/nogavadu/articles-service/internal/repository"
 	articleRepo "github.com/nogavadu/articles-service/internal/repository/article"
+	articleImagesRepo "github.com/nogavadu/articles-service/internal/repository/article_images"
+	articleRelationsRepo "github.com/nogavadu/articles-service/internal/repository/article_relations"
 	categoryRepo "github.com/nogavadu/articles-service/internal/repository/category"
 	cropRepo "github.com/nogavadu/articles-service/internal/repository/crop"
 	"github.com/nogavadu/articles-service/internal/service"
@@ -28,17 +30,19 @@ type serviceProvider struct {
 
 	logger *slog.Logger
 
-	cropImpl       *crop.Implementation
-	cropService    service.CropService
-	cropRepository repository.CropRepository
+	cropImpl     *crop.Implementation
+	categoryImpl *category.Implementation
+	articlesImpl *article.Implementation
 
-	categoryImpl       *category.Implementation
-	categoryService    service.CategoryService
-	categoryRepository repository.CategoryRepository
+	cropService     service.CropService
+	categoryService service.CategoryService
+	articleService  service.ArticleService
 
-	articlesImpl      *article.Implementation
-	articleService    service.ArticleService
-	articleRepository repository.ArticleRepository
+	cropRepository             repository.CropRepository
+	categoryRepository         repository.CategoryRepository
+	articleRepository          repository.ArticleRepository
+	articleImagesRepository    repository.ArticleImagesRepository
+	articleRelationsRepository repository.ArticleRelationsRepository
 
 	dbClient  db.Client
 	txManager db.TxManager
@@ -135,7 +139,11 @@ func (p *serviceProvider) ArticleImpl(ctx context.Context) *article.Implementati
 func (p *serviceProvider) ArticleService(ctx context.Context) service.ArticleService {
 	if p.articleService == nil {
 		p.articleService = articleServ.New(
-			p.Logger(), p.ArticleRepository(ctx), p.TxManger(ctx),
+			p.Logger(),
+			p.ArticleRepository(ctx),
+			p.ArticleImagesRepository(ctx),
+			p.ArticleRelationsRepository(ctx),
+			p.TxManger(ctx),
 		)
 	}
 	return p.articleService
@@ -146,6 +154,20 @@ func (p *serviceProvider) ArticleRepository(ctx context.Context) repository.Arti
 		p.articleRepository = articleRepo.New(p.DBClient(ctx))
 	}
 	return p.articleRepository
+}
+
+func (p *serviceProvider) ArticleImagesRepository(ctx context.Context) repository.ArticleImagesRepository {
+	if p.articleImagesRepository == nil {
+		p.articleImagesRepository = articleImagesRepo.New(p.DBClient(ctx))
+	}
+	return p.articleImagesRepository
+}
+
+func (p *serviceProvider) ArticleRelationsRepository(ctx context.Context) repository.ArticleRelationsRepository {
+	if p.articleRelationsRepository == nil {
+		p.articleRelationsRepository = articleRelationsRepo.New(p.DBClient(ctx))
+	}
+	return p.articleRelationsRepository
 }
 
 func (p *serviceProvider) DBClient(ctx context.Context) db.Client {
