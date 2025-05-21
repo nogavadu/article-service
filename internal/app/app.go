@@ -83,7 +83,8 @@ func (a *App) initArticleAPI(ctx context.Context, r chi.Router) {
 	r.Route("/articles", func(r chi.Router) {
 		r.Post("/", articleApi.CreateHandler())
 		r.Get("/", articleApi.GetAllHandler())
-		r.Get("/{id}", articleApi.GetByIDHandler())
+		r.Get("/{articleId}", articleApi.GetByIDHandler())
+		r.Patch("/{articleId}", articleApi.Update())
 	})
 }
 

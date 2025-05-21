@@ -25,6 +25,7 @@ type ArticleRepository interface {
 	Create(ctx context.Context, articleBody *articleRepoModel.ArticleBody) (int, error)
 	GetAll(ctx context.Context, params *articleRepoModel.ArticleGetAllParams) ([]articleRepoModel.Article, error)
 	GetById(ctx context.Context, id int) (*articleRepoModel.Article, error)
+	Update(ctx context.Context, id int, input *articleRepoModel.UpdateInput) error
 }
 
 type ArticleRelationsRepository interface {

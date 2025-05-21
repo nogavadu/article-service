@@ -31,3 +31,10 @@ func ToRepoArticleGetAllParams(params *model.ArticleGetAllParams) *repoModel.Art
 		Offset:     params.Offset,
 	}
 }
+
+func ToRepoArticleUpdateInput(input *model.ArticleUpdateInput) *repoModel.UpdateInput {
+	return &repoModel.UpdateInput{
+		Title: &input.Title,
+		Text:  &input.Text,
+	}
+}

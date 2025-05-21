@@ -20,3 +20,8 @@ type ArticleBody struct {
 	Title string `db:"title"`
 	Text  string `db:"text"`
 }
+
+type UpdateInput struct {
+	Title *string `db:"title"`
+	Text  *string `db:"text"`
+}

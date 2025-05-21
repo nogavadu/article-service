@@ -26,7 +26,8 @@ func New(dbc db.Client) repository.ArticleImagesRepository {
 }
 
 func (r *articleImagesRepository) CreateBulk(ctx context.Context, articleId int, images []string) error {
-	builder := sq.Insert("articles_images").
+	builder := sq.
+		Insert("articles_images").
 		PlaceholderFormat(sq.Dollar).
 		Columns("article_id", "img")
 
@@ -76,7 +77,8 @@ func (r *articleImagesRepository) GetAll(ctx context.Context, articleId int) ([]
 }
 
 func (r *articleImagesRepository) DeleteBulk(ctx context.Context, articleId int) error {
-	queryRaw, args, err := sq.Delete("articles_images").
+	queryRaw, args, err := sq.
+		Delete("articles_images").
 		PlaceholderFormat(sq.Dollar).
 		Where(sq.Eq{"article_id": articleId}).
 		ToSql()

@@ -18,6 +18,12 @@ type Article struct {
 
 type ArticleBody struct {
 	Title  string   `json:"title" validate:"required"`
-	Text   string   `json:"body,omitempty"`
+	Text   string   `json:"text,omitempty"`
+	Images []string `json:"images,omitempty"`
+}
+
+type ArticleUpdateInput struct {
+	Title  string   `json:"title,omitempty"`
+	Text   string   `json:"text,omitempty"`
 	Images []string `json:"images,omitempty"`
 }

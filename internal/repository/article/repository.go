@@ -140,3 +140,32 @@ func (r *articleRepository) GetById(ctx context.Context, id int) (*articleRepoMo
 
 	return &article, nil
 }
+
+func (r *articleRepository) Update(ctx context.Context, id int, input *articleRepoModel.UpdateInput) error {
+	builder := sq.
+		Update("articles").
+		PlaceholderFormat(sq.Dollar)
+
+	if input.Title != nil {
+		builder = builder.Set("title", input.Title)
+	}
+	if input.Text != nil {
+		builder = builder.Set("text", input.Text)
+	}
+
+	queryRaw, args, err := builder.Where(sq.Eq{"id": id}).ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build query: %s: %w", ErrInternalServerError, err)
+	}
+
+	query := db.Query{
+		Name:     "articleRepository.Update",
+		QueryRaw: queryRaw,
+	}
+
+	if _, err = r.dbc.DB().ExecContext(ctx, query, args...); err != nil {
+		return fmt.Errorf("failed to update article: %s: %w", ErrInternalServerError, err)
+	}
+
+	return nil
+}

@@ -17,7 +17,7 @@ type GetByIDResponse struct {
 
 func (i *Implementation) GetByIDHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		idStr := chi.URLParam(r, "id")
+		idStr := chi.URLParam(r, "articleId")
 		if idStr == "" {
 			response.Err(w, r, "article id is required", http.StatusBadRequest)
 			return

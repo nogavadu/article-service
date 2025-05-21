@@ -144,3 +144,38 @@ func (s *articleService) GetById(ctx context.Context, id int) (*model.Article, e
 
 	return article, err
 }
+
+func (s *articleService) Update(ctx context.Context, id int, input *model.ArticleUpdateInput) error {
+	const op = "articleService.Update"
+	log := s.log.With(slog.String("op", op))
+
+	err := s.txManager.ReadCommitted(ctx, func(ctx context.Context) error {
+		var errTx error
+		defer func() {
+			if errTx != nil {
+				log.Error("failed to update article", slog.String("error", errTx.Error()))
+			}
+		}()
+
+		errTx = s.articleRepo.Update(ctx, id, converter.ToRepoArticleUpdateInput(input))
+		if errTx != nil {
+			return ErrInternalServerError
+		}
+
+		errTx = s.articleImagesRepo.DeleteBulk(ctx, id)
+		if errTx != nil {
+			return ErrInternalServerError
+		}
+
+		if len(input.Images) > 0 {
+			errTx = s.articleImagesRepo.CreateBulk(ctx, id, input.Images)
+			if errTx != nil {
+				return ErrInternalServerError
+			}
+		}
+
+		return nil
+	})
+
+	return err
+}
