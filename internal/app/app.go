@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
-	"github.com/nogavadu/articles-service/internal/closer"
+	"github.com/nogavadu/platform_common/pkg/closer"
 	"log/slog"
 	"net/http"
 	"strconv"

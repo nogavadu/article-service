@@ -6,10 +6,10 @@ import (
 	"fmt"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/nogavadu/articles-service/internal/client/db"
 	"github.com/nogavadu/articles-service/internal/lib/postgresErrors"
 	"github.com/nogavadu/articles-service/internal/repository"
 	articleRepoModel "github.com/nogavadu/articles-service/internal/repository/article/model"
+	"github.com/nogavadu/platform_common/pkg/db"
 	"time"
 )
 

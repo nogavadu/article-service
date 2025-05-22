@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/nogavadu/articles-service/internal/client/db"
 	"github.com/nogavadu/articles-service/internal/domain/converter"
 	"github.com/nogavadu/articles-service/internal/domain/model"
 	"github.com/nogavadu/articles-service/internal/repository"
 	"github.com/nogavadu/articles-service/internal/repository/crop"
 	"github.com/nogavadu/articles-service/internal/service"
+	"github.com/nogavadu/platform_common/pkg/db"
 	"log/slog"
 )
 

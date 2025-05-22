@@ -3,12 +3,12 @@ package category
 import (
 	"context"
 	"errors"
-	"github.com/nogavadu/articles-service/internal/client/db"
 	"github.com/nogavadu/articles-service/internal/domain/converter"
 	"github.com/nogavadu/articles-service/internal/domain/model"
 	"github.com/nogavadu/articles-service/internal/repository"
 	categoryRepo "github.com/nogavadu/articles-service/internal/repository/category"
 	"github.com/nogavadu/articles-service/internal/service"
+	"github.com/nogavadu/platform_common/pkg/db"
 	"log/slog"
 )
 
