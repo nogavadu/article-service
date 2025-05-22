@@ -23,6 +23,11 @@ type CategoryRepository interface {
 	Delete(ctx context.Context, id int) error
 }
 
+type CropCategoriesRepository interface {
+	Create(ctx context.Context, cropId int, categoryId int) error
+	Delete(ctx context.Context, cropId int, categoryId int) error
+}
+
 type ArticleRepository interface {
 	Create(ctx context.Context, articleBody *articleRepoModel.ArticleBody) (int, error)
 	GetAll(ctx context.Context, params *articleRepoModel.ArticleGetAllParams) ([]articleRepoModel.Article, error)

@@ -23,15 +23,22 @@ var (
 type cropService struct {
 	log *slog.Logger
 
-	cropRepo  repository.CropRepository
-	txManager db.TxManager
+	cropRepo           repository.CropRepository
+	cropCategoriesRepo repository.CropCategoriesRepository
+	txManager          db.TxManager
 }
 
-func New(log *slog.Logger, cropRepository repository.CropRepository, txManager db.TxManager) service.CropService {
+func New(
+	log *slog.Logger,
+	cropRepository repository.CropRepository,
+	cropCategoriesRepo repository.CropCategoriesRepository,
+	txManager db.TxManager,
+) service.CropService {
 	return &cropService{
-		log:       log,
-		cropRepo:  cropRepository,
-		txManager: txManager,
+		log:                log,
+		cropRepo:           cropRepository,
+		cropCategoriesRepo: cropCategoriesRepo,
+		txManager:          txManager,
 	}
 }
 
@@ -103,6 +110,30 @@ func (s *cropService) Delete(ctx context.Context, id int) error {
 
 	if err := s.cropRepo.Delete(ctx, id); err != nil {
 		log.Error("failed to delete crop", slog.String("error", err.Error()))
+		return ErrInternalServerError
+	}
+
+	return nil
+}
+
+func (s *cropService) AddRelation(ctx context.Context, cropId int, categoryId int) error {
+	const op = "cropService.AddRelation"
+	log := s.log.With(slog.String("op", op))
+
+	if err := s.cropCategoriesRepo.Create(ctx, cropId, categoryId); err != nil {
+		log.Error("failed to add crop category", slog.String("error", err.Error()))
+		return ErrInternalServerError
+	}
+
+	return nil
+}
+
+func (s *cropService) RemoveRelation(ctx context.Context, cropId int, categoryId int) error {
+	const op = "cropService.RemoveRelation"
+	log := s.log.With(slog.String("op", op))
+
+	if err := s.cropCategoriesRepo.Delete(ctx, cropId, categoryId); err != nil {
+		log.Error("failed to remove crop category", slog.String("error", err.Error()))
 		return ErrInternalServerError
 	}
 

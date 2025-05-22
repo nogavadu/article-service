@@ -11,10 +11,13 @@ type CropService interface {
 	GetById(ctx context.Context, id int) (*model.Crop, error)
 	Update(ctx context.Context, id int, input *model.UpdateCropInput) error
 	Delete(ctx context.Context, id int) error
+
+	AddRelation(ctx context.Context, cropId int, categoryId int) error
+	RemoveRelation(ctx context.Context, cropId int, categoryId int) error
 }
 
 type CategoryService interface {
-	Create(ctx context.Context, category *model.CategoryInfo) (int, error)
+	Create(ctx context.Context, category *model.CategoryInfo, params *model.CategoryCreateParams) (int, error)
 	GetAll(ctx context.Context, params *model.CategoryGetAllParams) ([]model.Category, error)
 	GetById(ctx context.Context, id int) (*model.Category, error)
 	Update(ctx context.Context, id int, input *model.UpdateCategoryInput) error

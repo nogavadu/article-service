@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-type getListResponse struct {
+type getAllResponse struct {
 	Data []model.Article `json:"data"`
 }
 
@@ -33,7 +33,7 @@ func (i *Implementation) GetAllHandler() http.HandlerFunc {
 			return
 		}
 
-		render.JSON(w, r, getListResponse{
+		render.JSON(w, r, &getAllResponse{
 			Data: articles,
 		})
 	}

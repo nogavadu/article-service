@@ -16,6 +16,7 @@ import (
 	articleRelationsRepo "github.com/nogavadu/articles-service/internal/repository/article_relations"
 	categoryRepo "github.com/nogavadu/articles-service/internal/repository/category"
 	cropRepo "github.com/nogavadu/articles-service/internal/repository/crop"
+	cropCategoriesRepo "github.com/nogavadu/articles-service/internal/repository/crop_categories"
 	"github.com/nogavadu/articles-service/internal/service"
 	articleServ "github.com/nogavadu/articles-service/internal/service/article"
 	categoryServ "github.com/nogavadu/articles-service/internal/service/category"
@@ -40,6 +41,7 @@ type serviceProvider struct {
 
 	cropRepository             repository.CropRepository
 	categoryRepository         repository.CategoryRepository
+	cropsCategoriesRepository  repository.CropCategoriesRepository
 	articleRepository          repository.ArticleRepository
 	articleImagesRepository    repository.ArticleImagesRepository
 	articleRelationsRepository repository.ArticleRelationsRepository
@@ -93,7 +95,10 @@ func (p *serviceProvider) CropImpl(ctx context.Context) *crop.Implementation {
 func (p *serviceProvider) CropService(ctx context.Context) service.CropService {
 	if p.cropService == nil {
 		p.cropService = cropServ.New(
-			p.Logger(), p.CropRepository(ctx), p.TxManger(ctx),
+			p.Logger(),
+			p.CropRepository(ctx),
+			p.CropCategoriesRepository(ctx),
+			p.TxManger(ctx),
 		)
 	}
 	return p.cropService
@@ -116,7 +121,10 @@ func (p *serviceProvider) CategoryImpl(ctx context.Context) *category.Implementa
 func (p *serviceProvider) CategoryService(ctx context.Context) service.CategoryService {
 	if p.categoryService == nil {
 		p.categoryService = categoryServ.New(
-			p.Logger(), p.CategoryRepository(ctx), p.TxManger(ctx),
+			p.Logger(),
+			p.CategoryRepository(ctx),
+			p.CropCategoriesRepository(ctx),
+			p.TxManger(ctx),
 		)
 	}
 	return p.categoryService
@@ -127,6 +135,13 @@ func (p *serviceProvider) CategoryRepository(ctx context.Context) repository.Cat
 		p.categoryRepository = categoryRepo.New(p.DBClient(ctx))
 	}
 	return p.categoryRepository
+}
+
+func (p *serviceProvider) CropCategoriesRepository(ctx context.Context) repository.CropCategoriesRepository {
+	if p.cropsCategoriesRepository == nil {
+		p.cropsCategoriesRepository = cropCategoriesRepo.New(p.DBClient(ctx))
+	}
+	return p.cropsCategoriesRepository
 }
 
 func (p *serviceProvider) ArticleImpl(ctx context.Context) *article.Implementation {

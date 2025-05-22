@@ -2,6 +2,10 @@ package model
 
 import "time"
 
+type CategoryCreateParams struct {
+	CropId *int
+}
+
 type CategoryGetAllParams struct {
 	CropId *int
 	Limit  *int

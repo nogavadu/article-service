@@ -1,0 +1,47 @@
+package crop
+
+import (
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
+	"github.com/nogavadu/articles-service/internal/lib/api/response"
+	"net/http"
+	"strconv"
+)
+
+type removeRelationResponse struct {
+	Status string `json:"status"`
+}
+
+func (i *Implementation) RemoveRelationHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		cropIdStr := chi.URLParam(r, "cropId")
+		if cropIdStr == "" {
+			response.Err(w, r, "crop id is required", http.StatusBadRequest)
+			return
+		}
+		cropId, err := strconv.Atoi(cropIdStr)
+		if err != nil {
+			response.Err(w, r, "invalid crop id", http.StatusBadRequest)
+			return
+		}
+
+		categoryIdStr := chi.URLParam(r, "categoryId")
+		if categoryIdStr == "" {
+			response.Err(w, r, "category id is required", http.StatusBadRequest)
+			return
+		}
+		categoryId, err := strconv.Atoi(categoryIdStr)
+		if err != nil {
+			response.Err(w, r, "invalid category id", http.StatusBadRequest)
+		}
+
+		if err = i.cropServ.RemoveRelation(r.Context(), cropId, categoryId); err != nil {
+			response.Err(w, r, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		render.JSON(w, r, &removeRelationResponse{
+			Status: "ok",
+		})
+	}
+}

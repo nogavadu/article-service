@@ -73,7 +73,7 @@ func (r *categoryRepository) GetAll(
 		From("categories AS c")
 
 	if params.CropId != nil {
-		builder = builder.Join("articles_relations AS ar ON c.id = ar.category_id AND ar.crop_id = ?",
+		builder = builder.Join("crops_categories AS ar ON c.id = ar.category_id AND ar.crop_id = ?",
 			*params.CropId,
 		)
 	}

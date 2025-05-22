@@ -22,36 +22,65 @@ var (
 type categoryService struct {
 	log *slog.Logger
 
-	categoryRepo repository.CategoryRepository
-	txManager    db.TxManager
+	categoryRepo       repository.CategoryRepository
+	cropCategoriesRepo repository.CropCategoriesRepository
+	txManager          db.TxManager
 }
 
-func New(log *slog.Logger, categoryRepo repository.CategoryRepository, txManager db.TxManager) service.CategoryService {
+func New(
+	log *slog.Logger,
+	categoryRepo repository.CategoryRepository,
+	cropCategoriesRepo repository.CropCategoriesRepository,
+	txManager db.TxManager,
+) service.CategoryService {
 	return &categoryService{
-		log:          log,
-		categoryRepo: categoryRepo,
-		txManager:    txManager,
+		log:                log,
+		categoryRepo:       categoryRepo,
+		cropCategoriesRepo: cropCategoriesRepo,
+		txManager:          txManager,
 	}
 }
 
-func (s *categoryService) Create(ctx context.Context, categoryInfo *model.CategoryInfo) (int, error) {
+func (s *categoryService) Create(
+	ctx context.Context,
+	categoryInfo *model.CategoryInfo,
+	params *model.CategoryCreateParams,
+) (int, error) {
 	const op = "category.Create"
 	log := s.log.With(slog.String("op", op))
 
-	id, err := s.categoryRepo.Create(ctx, converter.ToRepoCategoryInfo(categoryInfo))
-	if err != nil {
-		if errors.Is(err, categoryRepo.ErrInvalidArguments) {
-			return 0, ErrInvalidArguments
-		}
-		if errors.Is(err, categoryRepo.ErrAlreadyExists) {
-			return 0, ErrAlreadyExists
+	var id int
+	err := s.txManager.ReadCommitted(ctx, func(ctx context.Context) error {
+		var errTx error
+		defer func() {
+			if errTx != nil {
+				log.Error("failed to create category", slog.String("error", errTx.Error()))
+			}
+		}()
+
+		id, errTx = s.categoryRepo.Create(ctx, converter.ToRepoCategoryInfo(categoryInfo))
+		if errTx != nil {
+			if errors.Is(errTx, categoryRepo.ErrInvalidArguments) {
+				return ErrInvalidArguments
+			}
+			if errors.Is(errTx, categoryRepo.ErrAlreadyExists) {
+				return ErrAlreadyExists
+			}
+
+			return ErrInternalServerError
 		}
 
-		log.Error("failed to create category", slog.String("error", err.Error()))
-		return 0, ErrInternalServerError
-	}
+		if params.CropId != nil {
+			errTx = s.cropCategoriesRepo.Create(ctx, *params.CropId, id)
+			if errTx != nil {
+				return ErrInternalServerError
+			}
+		}
 
-	return id, nil
+		return nil
+	})
+
+	return id, err
 }
 
 func (s *categoryService) GetAll(ctx context.Context, params *model.CategoryGetAllParams) ([]model.Category, error) {
