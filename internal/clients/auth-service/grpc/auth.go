@@ -64,7 +64,6 @@ func (c *AuthServiceClient) Register(ctx context.Context, request *authService.R
 
 	resp, err := c.api.Register(ctx, request)
 	if err != nil {
-		c.log.Error("%s: %w", op, err)
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -76,9 +75,35 @@ func (c *AuthServiceClient) Login(ctx context.Context, request *authService.Logi
 
 	resp, err := c.api.Login(ctx, request)
 	if err != nil {
-		c.log.Error("%s: %w", op, err)
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
 	return resp.RefreshToken, nil
+}
+
+func (c *AuthServiceClient) RefreshToken(ctx context.Context) (string, error) {
+	const op = "AuthServiceClient.GetRefreshToken"
+
+	resp, err := c.api.GetRefreshToken(ctx, &authService.GetRefreshTokenRequest{
+		RefreshToken: ctx.Value("authorization").(string),
+	})
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	return resp.RefreshToken, nil
+}
+
+func (c *AuthServiceClient) AccessToken(ctx context.Context) (string, error) {
+	const op = "AuthServiceClient.AccessToken"
+
+	c.log.Info(ctx.Value("authorization").(string))
+	resp, err := c.api.GetAccessToken(ctx, &authService.GetAccessTokenRequest{
+		RefreshToken: ctx.Value("authorization").(string),
+	})
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	return resp.AccessToken, nil
 }
