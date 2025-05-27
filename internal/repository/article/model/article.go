@@ -17,11 +17,13 @@ type Article struct {
 }
 
 type ArticleBody struct {
-	Title string `db:"title"`
-	Text  string `db:"text"`
+	Title     string  `db:"title"`
+	LatinName *string `db:"latin_name"`
+	Text      *string `db:"text"`
 }
 
 type UpdateInput struct {
-	Title *string `db:"title"`
-	Text  *string `db:"text"`
+	Title     *string `db:"title"`
+	LatinName *string `db:"latin_name"`
+	Text      *string `db:"text"`
 }

@@ -55,6 +55,13 @@ func (a *App) initServiceProvider(ctx context.Context) error {
 	return nil
 }
 
+func (a *App) initAuthAPI(r chi.Router) {
+	authApi := a.serviceProvider.AuthImpl()
+
+	r.Post("/register", authApi.RegisterHandler())
+	r.Post("/login", authApi.LoginHandler())
+}
+
 func (a *App) initCropAPI(ctx context.Context, r chi.Router) {
 	cropApi := a.serviceProvider.CropImpl(ctx)
 
@@ -106,6 +113,7 @@ func (a *App) initHttpServer(ctx context.Context) error {
 	}))
 
 	router.Route("/api", func(r chi.Router) {
+		a.initAuthAPI(r)
 		a.initCropAPI(ctx, r)
 		a.initCategoryAPI(ctx, r)
 		a.initArticleAPI(ctx, r)

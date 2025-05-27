@@ -2,7 +2,9 @@ package request
 
 import (
 	"fmt"
+	"net/http"
 	"reflect"
+	"strings"
 )
 
 func IsStructEmpty(obj interface{}) (bool, error) {
@@ -29,4 +31,19 @@ func IsStructEmpty(obj interface{}) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func GetAuthToken(r *http.Request) (string, error) {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return "", fmt.Errorf("missing Authorization header")
+	}
+
+	tokenParts := strings.Split(authHeader, " ")
+	if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
+		return "", fmt.Errorf("invalid Authorization header")
+	}
+
+	token := tokenParts[1]
+	return token, nil
 }

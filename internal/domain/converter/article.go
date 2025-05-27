@@ -9,17 +9,19 @@ func ToArticle(article *repoModel.Article, images []string) *model.Article {
 	return &model.Article{
 		Id: article.Id,
 		ArticleBody: model.ArticleBody{
-			Title:  article.Title,
-			Text:   article.Text,
-			Images: images,
+			Title:     article.Title,
+			Text:      article.Text,
+			LatinName: article.LatinName,
+			Images:    images,
 		},
 	}
 }
 
 func ToRepoArticleBody(body *model.ArticleBody) *repoModel.ArticleBody {
 	return &repoModel.ArticleBody{
-		Title: body.Title,
-		Text:  body.Text,
+		Title:     body.Title,
+		LatinName: body.LatinName,
+		Text:      body.Text,
 	}
 }
 
@@ -34,7 +36,8 @@ func ToRepoArticleGetAllParams(params *model.ArticleGetAllParams) *repoModel.Art
 
 func ToRepoArticleUpdateInput(input *model.ArticleUpdateInput) *repoModel.UpdateInput {
 	return &repoModel.UpdateInput{
-		Title: &input.Title,
-		Text:  &input.Text,
+		Title:     input.Title,
+		LatinName: input.LatinName,
+		Text:      input.Text,
 	}
 }

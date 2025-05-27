@@ -1,6 +1,7 @@
 package crop
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
@@ -22,6 +23,13 @@ type updateResponse struct {
 
 func (i *Implementation) UpdateHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		token, err := request.GetAuthToken(r)
+		if err != nil {
+			response.Err(w, r, "", http.StatusUnauthorized)
+			return
+		}
+		r.WithContext(context.WithValue(r.Context(), "token", token))
+
 		idStr := chi.URLParam(r, "cropId")
 		if idStr == "" {
 			response.Err(w, r, "crop id is required", http.StatusBadRequest)

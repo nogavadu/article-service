@@ -100,7 +100,7 @@ func (s *articleService) GetAll(ctx context.Context, params *model.ArticleGetAll
 			return ErrInternalServerError
 		}
 
-		articles = make([]model.Article, len(repoArticles))
+		articles = make([]model.Article, 0, len(repoArticles))
 		for _, a := range repoArticles {
 			imgs, errTx := s.articleImagesRepo.GetAll(ctx, a.Id)
 			if errTx != nil {

@@ -168,6 +168,7 @@ func (r *categoryRepository) Update(ctx context.Context, id int, input *category
 func (r *categoryRepository) Delete(ctx context.Context, id int) error {
 	queryRaw, args, err := sq.
 		Delete("categories").
+		PlaceholderFormat(sq.Dollar).
 		Where(sq.Eq{"id": id}).
 		ToSql()
 	if err != nil {

@@ -5,6 +5,11 @@ import (
 	"github.com/nogavadu/articles-service/internal/domain/model"
 )
 
+type AuthService interface {
+	Register(ctx context.Context, authData *model.UserAuthData) (int, error)
+	Login(ctx context.Context, authData *model.UserAuthData) (string, error)
+}
+
 type CropService interface {
 	Create(ctx context.Context, cropInfo *model.CropInfo) (int, error)
 	GetAll(ctx context.Context) ([]model.Crop, error)

@@ -142,6 +142,7 @@ func (r *cropRepository) Update(ctx context.Context, id int, input *cropRepoMode
 func (r *cropRepository) Delete(ctx context.Context, id int) error {
 	queryRaw, args, err := sq.
 		Delete("crops").
+		PlaceholderFormat(sq.Dollar).
 		Where(sq.Eq{"id": id}).
 		ToSql()
 	if err != nil {

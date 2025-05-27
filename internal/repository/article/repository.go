@@ -36,8 +36,8 @@ func (r *articleRepository) Create(
 	queryRaw, args, err := sq.
 		Insert("articles").
 		PlaceholderFormat(sq.Dollar).
-		Columns("title", "text", "created_at", "updated_at").
-		Values(articleBody.Title, articleBody.Text, time.Now(), time.Now()).
+		Columns("title", "latin_name", "text", "created_at", "updated_at").
+		Values(articleBody.Title, articleBody.LatinName, articleBody.Text, time.Now(), time.Now()).
 		Suffix("RETURNING id").
 		ToSql()
 	if err != nil {
@@ -69,25 +69,20 @@ func (r *articleRepository) GetAll(
 	params *articleRepoModel.ArticleGetAllParams,
 ) ([]articleRepoModel.Article, error) {
 	builder := sq.
-		Select("a.id, a.title, a.text").
+		Select("a.id, a.title, a.latin_name, a.text").
 		PlaceholderFormat(sq.Dollar).
 		From("articles AS a")
 
-	if params.CropId != nil && params.CategoryId != nil {
-		builder = builder.Join(
-			"articles_relations AS ar ON a.id = ar.article_id AND ar.crop_id = ? AND ar.category_id = ?",
-			*params.CropId, *params.CategoryId,
-		)
-	} else if params.CropId != nil {
-		builder = builder.Join(
-			"articles_relations AS ar ON a.id = ar.article_id AND ar.crop_id = ?",
-			*params.CropId,
-		)
-	} else if params.CategoryId != nil {
-		builder = builder.Join(
-			"articles_relations AS ar ON a.id = ar.article_id AND ar.category_id = ?",
-			*params.CategoryId,
-		)
+	if params.CropId != nil || params.CategoryId != nil {
+		builder = builder.InnerJoin("articles_relations AS ar ON a.id = ar.article_id")
+
+		if params.CropId != nil && params.CategoryId != nil {
+			builder = builder.Where("ar.crop_id = ? AND ar.category_id = ?", *params.CropId, *params.CategoryId)
+		} else if params.CropId != nil {
+			builder = builder.Where("ar.crop_id = ?", *params.CropId)
+		} else if params.CategoryId != nil {
+			builder = builder.Where("ar.category_id = ?", *params.CategoryId)
+		}
 	}
 
 	if params.Limit != nil {
@@ -118,7 +113,7 @@ func (r *articleRepository) GetAll(
 
 func (r *articleRepository) GetById(ctx context.Context, id int) (*articleRepoModel.Article, error) {
 	queryRaw, args, err := sq.
-		Select("id, title, text").
+		Select("id, title, latin_name, text").
 		PlaceholderFormat(sq.Dollar).
 		From("articles").
 		Where(sq.Eq{"id": id}).
@@ -149,6 +144,9 @@ func (r *articleRepository) Update(ctx context.Context, id int, input *articleRe
 	if input.Title != nil {
 		builder = builder.Set("title", input.Title)
 	}
+	if input.LatinName != nil {
+		builder = builder.Set("latin_name", input.LatinName)
+	}
 	if input.Text != nil {
 		builder = builder.Set("text", input.Text)
 	}
@@ -173,6 +171,7 @@ func (r *articleRepository) Update(ctx context.Context, id int, input *articleRe
 func (r *articleRepository) Delete(ctx context.Context, id int) error {
 	queryRaw, args, err := sq.
 		Delete("articles").
+		PlaceholderFormat(sq.Dollar).
 		Where(sq.Eq{"id": id}).
 		ToSql()
 	if err != nil {

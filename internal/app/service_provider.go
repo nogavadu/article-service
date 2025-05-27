@@ -3,8 +3,10 @@ package app
 import (
 	"context"
 	"github.com/nogavadu/articles-service/internal/api/http/article"
+	"github.com/nogavadu/articles-service/internal/api/http/auth"
 	"github.com/nogavadu/articles-service/internal/api/http/category"
 	"github.com/nogavadu/articles-service/internal/api/http/crop"
+	"github.com/nogavadu/articles-service/internal/clients/auth-service/grpc"
 	"github.com/nogavadu/articles-service/internal/config"
 	"github.com/nogavadu/articles-service/internal/config/env"
 	"github.com/nogavadu/articles-service/internal/repository"
@@ -16,6 +18,7 @@ import (
 	cropCategoriesRepo "github.com/nogavadu/articles-service/internal/repository/crop_categories"
 	"github.com/nogavadu/articles-service/internal/service"
 	articleServ "github.com/nogavadu/articles-service/internal/service/article"
+	authServ "github.com/nogavadu/articles-service/internal/service/auth"
 	categoryServ "github.com/nogavadu/articles-service/internal/service/category"
 	cropServ "github.com/nogavadu/articles-service/internal/service/crop"
 	"github.com/nogavadu/platform_common/pkg/db"
@@ -26,15 +29,18 @@ import (
 )
 
 type serviceProvider struct {
-	httpServerConfig config.HTTPServerConfig
-	pgConfig         config.PGConfig
+	httpServerConfig  config.HTTPServerConfig
+	pgConfig          config.PGConfig
+	authServiceConfig config.AuthServiceConfig
 
 	logger *slog.Logger
 
+	authImpl     *auth.Implementation
 	cropImpl     *crop.Implementation
 	categoryImpl *category.Implementation
 	articlesImpl *article.Implementation
 
+	authService     service.AuthService
 	cropService     service.CropService
 	categoryService service.CategoryService
 	articleService  service.ArticleService
@@ -48,6 +54,9 @@ type serviceProvider struct {
 
 	dbClient  db.Client
 	txManager db.TxManager
+
+	authClient   *grpc.AuthServiceClient
+	accessClient *grpc.AccessServiceClient
 }
 
 func newServiceProvider() *serviceProvider {
@@ -78,11 +87,73 @@ func (p *serviceProvider) PGConfig() config.PGConfig {
 	return p.pgConfig
 }
 
+func (p *serviceProvider) AuthServiceConfig() config.AuthServiceConfig {
+	if p.authServiceConfig == nil {
+		authServiceConfig, err := env.NewAuthServiceConfig()
+		if err != nil {
+			p.Logger().Error("failed to get authServiceConfig", slog.String("err", err.Error()))
+			panic(err)
+		}
+		p.authServiceConfig = authServiceConfig
+	}
+	return p.authServiceConfig
+}
+
 func (p *serviceProvider) Logger() *slog.Logger {
 	if p.logger == nil {
 		p.logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	}
 	return p.logger
+}
+
+func (p *serviceProvider) AuthImpl() *auth.Implementation {
+	if p.authImpl == nil {
+		p.authImpl = auth.New(p.AuthService())
+	}
+	return p.authImpl
+}
+
+func (p *serviceProvider) AuthService() service.AuthService {
+	if p.authService == nil {
+		p.authService = authServ.New(p.Logger(), p.AuthClient())
+	}
+	return p.authService
+}
+
+func (p *serviceProvider) AuthClient() *grpc.AuthServiceClient {
+	if p.authClient == nil {
+		c, err := grpc.NewAuthServiceClient(
+			p.Logger(),
+			p.AuthServiceConfig().Address(),
+			p.AuthServiceConfig().Timeout(),
+			p.AuthServiceConfig().RetriesCount(),
+		)
+		if err != nil {
+			p.Logger().Error("failed to create auth service client", slog.String("err", err.Error()))
+			return nil
+		}
+
+		p.authClient = c
+	}
+	return p.authClient
+}
+
+func (p *serviceProvider) AccessClient() *grpc.AccessServiceClient {
+	if p.accessClient == nil {
+		c, err := grpc.NewAccessServiceClient(
+			p.Logger(),
+			p.AuthServiceConfig().Address(),
+			p.AuthServiceConfig().Timeout(),
+			p.AuthServiceConfig().RetriesCount(),
+		)
+		if err != nil {
+			p.Logger().Error("failed to create auth service client", slog.String("err", err.Error()))
+			return nil
+		}
+
+		p.accessClient = c
+	}
+	return p.accessClient
 }
 
 func (p *serviceProvider) CropImpl(ctx context.Context) *crop.Implementation {
