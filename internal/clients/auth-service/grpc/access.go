@@ -1,6 +1,7 @@
 package grpc
 
 import (
+	"context"
 	"fmt"
 	grpclog "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	grpcretry "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
@@ -8,8 +9,16 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	"log/slog"
 	"time"
+)
+
+const (
+	UserAccessLevel      = 0
+	ModeratorAccessLevel = 10
+	AdminAccessLevel     = 25
+	CreatorAccessLevel   = 100
 )
 
 type AccessServiceClient struct {
@@ -50,4 +59,23 @@ func NewAccessServiceClient(
 		api: accessService.NewAccessV1Client(cc),
 		log: log,
 	}, nil
+}
+
+func (c *AccessServiceClient) Check(ctx context.Context, accessToken string, level int) error {
+	const op = "AuthServiceClient.Check"
+
+	md := metadata.Pairs(
+		"authorization", fmt.Sprintf("Bearer %s", accessToken),
+	)
+
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
+	_, err := c.api.Check(ctx, &accessService.CheckRequest{
+		RequiredLvl: uint32(level),
+	})
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }
