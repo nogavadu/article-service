@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-const authTokenKey = "token"
+const authTokenKey = "authorization"
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
+	"github.com/nogavadu/articles-service/internal/middlewares"
 	"github.com/nogavadu/platform_common/pkg/closer"
 	"log/slog"
 	"net/http"
@@ -66,11 +67,16 @@ func (a *App) initCropAPI(ctx context.Context, r chi.Router) {
 	cropApi := a.serviceProvider.CropImpl(ctx)
 
 	r.Route("/crops", func(r chi.Router) {
-		r.Post("/", cropApi.CreateHandler())
 		r.Get("/", cropApi.GetAllHandler())
 		r.Get("/{cropId}", cropApi.GetByIdHandler())
-		r.Patch("/{cropId}", cropApi.UpdateHandler())
-		r.Delete("/{cropId}", cropApi.DeleteHandler())
+
+		r.Group(func(r chi.Router) {
+			r.Use(middlewares.AuthMiddleware)
+
+			r.Post("/", cropApi.CreateHandler())
+			r.Patch("/{cropId}", cropApi.UpdateHandler())
+			r.Delete("/{cropId}", cropApi.DeleteHandler())
+		})
 
 		r.Post("/{cropId}/{categoryId}", cropApi.AddRelationHandler())
 		r.Delete("/{cropId}/{categoryId}", cropApi.RemoveRelationHandler())
@@ -81,11 +87,16 @@ func (a *App) initCategoryAPI(ctx context.Context, r chi.Router) {
 	categoryApi := a.serviceProvider.CategoryImpl(ctx)
 
 	r.Route("/categories", func(r chi.Router) {
-		r.Post("/", categoryApi.CreateHandler())
 		r.Get("/", categoryApi.GetAllHandler())
 		r.Get("/{categoryId}", categoryApi.GetByIdHandler())
-		r.Patch("/{categoryId}", categoryApi.UpdateHandler())
-		r.Delete("/{categoryId}", categoryApi.DeleteHandler())
+
+		r.Group(func(r chi.Router) {
+			r.Use(middlewares.AuthMiddleware)
+
+			r.Post("/", categoryApi.CreateHandler())
+			r.Patch("/{categoryId}", categoryApi.UpdateHandler())
+			r.Delete("/{categoryId}", categoryApi.DeleteHandler())
+		})
 	})
 }
 
@@ -93,11 +104,16 @@ func (a *App) initArticleAPI(ctx context.Context, r chi.Router) {
 	articleApi := a.serviceProvider.ArticleImpl(ctx)
 
 	r.Route("/articles", func(r chi.Router) {
-		r.Post("/", articleApi.CreateHandler())
 		r.Get("/", articleApi.GetAllHandler())
 		r.Get("/{articleId}", articleApi.GetByIDHandler())
-		r.Patch("/{articleId}", articleApi.UpdateHandler())
-		r.Delete("/{articleId}", articleApi.DeleteHandler())
+
+		r.Group(func(r chi.Router) {
+			r.Use(middlewares.AuthMiddleware)
+
+			r.Post("/", articleApi.CreateHandler())
+			r.Patch("/{articleId}", articleApi.UpdateHandler())
+			r.Delete("/{articleId}", articleApi.DeleteHandler())
+		})
 	})
 }
 

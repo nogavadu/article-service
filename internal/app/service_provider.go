@@ -170,6 +170,8 @@ func (p *serviceProvider) CropService(ctx context.Context) service.CropService {
 			p.CropRepository(ctx),
 			p.CropCategoriesRepository(ctx),
 			p.TxManger(ctx),
+			p.AccessClient(),
+			p.AuthClient(),
 		)
 	}
 	return p.cropService
