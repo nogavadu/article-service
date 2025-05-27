@@ -8,6 +8,7 @@ import (
 type AuthService interface {
 	Register(ctx context.Context, authData *model.UserAuthData) (int, error)
 	Login(ctx context.Context, authData *model.UserAuthData) (string, error)
+	GetRefreshToken(ctx context.Context) (string, error)
 }
 
 type CropService interface {

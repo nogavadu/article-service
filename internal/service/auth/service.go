@@ -48,3 +48,15 @@ func (s *authService) Login(ctx context.Context, authData *model.UserAuthData) (
 
 	return token, nil
 }
+
+func (s *authService) GetRefreshToken(ctx context.Context) (string, error) {
+	const op = "authService.GetRefreshToken"
+	log := s.log.With(slog.String("op", op))
+
+	token, err := s.asc.RefreshToken(ctx)
+	if err != nil {
+		log.Error("%s: %w", op, err)
+	}
+
+	return token, nil
+}

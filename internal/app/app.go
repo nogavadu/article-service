@@ -61,6 +61,12 @@ func (a *App) initAuthAPI(r chi.Router) {
 
 	r.Post("/register", authApi.RegisterHandler())
 	r.Post("/login", authApi.LoginHandler())
+
+	r.Group(func(r chi.Router) {
+		r.Use(middlewares.AuthMiddleware)
+
+		r.Get("/refreshToken", authApi.GetRefreshTokenHandler())
+	})
 }
 
 func (a *App) initCropAPI(ctx context.Context, r chi.Router) {
