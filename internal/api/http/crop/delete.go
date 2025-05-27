@@ -1,9 +1,11 @@
 package crop
 
 import (
+	"errors"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/nogavadu/articles-service/internal/lib/api/response"
+	"github.com/nogavadu/articles-service/internal/service/crop"
 	"net/http"
 	"strconv"
 )
@@ -28,6 +30,13 @@ func (i *Implementation) DeleteHandler() http.HandlerFunc {
 
 		err = i.cropServ.Delete(r.Context(), id)
 		if err != nil {
+			if errors.Is(err, crop.ErrAccessDenied) {
+				render.JSON(w, r, &updateResponse{
+					Status: "AccessDenied",
+				})
+				return
+			}
+
 			response.Err(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}

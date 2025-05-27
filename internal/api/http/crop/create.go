@@ -45,6 +45,12 @@ func (i *Implementation) CreateHandler() http.HandlerFunc {
 				response.Err(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
+			if errors.Is(err, cropServ.ErrAccessDenied) {
+				render.JSON(w, r, &updateResponse{
+					Status: "AccessDenied",
+				})
+				return
+			}
 
 			response.Err(w, r, err.Error(), http.StatusInternalServerError)
 			return

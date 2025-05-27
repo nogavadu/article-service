@@ -1,14 +1,15 @@
 package crop
 
 import (
-	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/nogavadu/articles-service/internal/domain/model"
 	"github.com/nogavadu/articles-service/internal/lib/api/request"
 	"github.com/nogavadu/articles-service/internal/lib/api/response"
+	"github.com/nogavadu/articles-service/internal/service/crop"
 	"net/http"
 	"strconv"
 )
@@ -23,13 +24,6 @@ type updateResponse struct {
 
 func (i *Implementation) UpdateHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		token, err := request.GetAuthToken(r)
-		if err != nil {
-			response.Err(w, r, "", http.StatusUnauthorized)
-			return
-		}
-		r.WithContext(context.WithValue(r.Context(), "token", token))
-
 		idStr := chi.URLParam(r, "cropId")
 		if idStr == "" {
 			response.Err(w, r, "crop id is required", http.StatusBadRequest)
@@ -58,6 +52,13 @@ func (i *Implementation) UpdateHandler() http.HandlerFunc {
 		}
 
 		if err = i.cropServ.Update(r.Context(), id, &reqData.UpdateCropInput); err != nil {
+			if errors.Is(err, crop.ErrAccessDenied) {
+				render.JSON(w, r, &updateResponse{
+					Status: "AccessDenied",
+				})
+				return
+			}
+
 			response.Err(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}

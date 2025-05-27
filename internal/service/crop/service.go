@@ -3,7 +3,7 @@ package crop
 import (
 	"context"
 	"errors"
-	"fmt"
+	authService "github.com/nogavadu/articles-service/internal/clients/auth-service/grpc"
 	"github.com/nogavadu/articles-service/internal/domain/converter"
 	"github.com/nogavadu/articles-service/internal/domain/model"
 	"github.com/nogavadu/articles-service/internal/repository"
@@ -18,6 +18,7 @@ var (
 	ErrAlreadyExists       = errors.New("crop already exists")
 	ErrInvalidArguments    = errors.New("invalid article arguments")
 	ErrInternalServerError = errors.New("internal server error")
+	ErrAccessDenied        = errors.New("access denied")
 )
 
 type cropService struct {
@@ -26,6 +27,9 @@ type cropService struct {
 	cropRepo           repository.CropRepository
 	cropCategoriesRepo repository.CropCategoriesRepository
 	txManager          db.TxManager
+
+	accessClient *authService.AccessServiceClient
+	authClient   *authService.AuthServiceClient
 }
 
 func New(
@@ -33,12 +37,16 @@ func New(
 	cropRepository repository.CropRepository,
 	cropCategoriesRepo repository.CropCategoriesRepository,
 	txManager db.TxManager,
+	accessClient *authService.AccessServiceClient,
+	authClient *authService.AuthServiceClient,
 ) service.CropService {
 	return &cropService{
 		log:                log,
 		cropRepo:           cropRepository,
 		cropCategoriesRepo: cropCategoriesRepo,
 		txManager:          txManager,
+		accessClient:       accessClient,
+		authClient:         authClient,
 	}
 }
 
@@ -46,7 +54,17 @@ func (s *cropService) Create(ctx context.Context, cropInfo *model.CropInfo) (int
 	const op = "cropService.Create"
 	log := s.log.With(slog.String("op", op))
 
-	fmt.Printf("SERVICE CROP INFO: %s\n", cropInfo)
+	token, err := s.authClient.AccessToken(ctx)
+	if err != nil {
+		log.Error("failed to get access token", slog.String("error", err.Error()))
+		return 0, ErrAccessDenied
+	}
+	err = s.accessClient.Check(ctx, token, authService.ModeratorAccessLevel)
+	if err != nil {
+		log.Error("access check failed", slog.String("error", err.Error()))
+		return 0, ErrAccessDenied
+	}
+
 	cropID, err := s.cropRepo.Create(ctx, converter.ToRepoCropInfo(cropInfo))
 	if err != nil {
 		log.Error("failed to create crop", slog.String("error", err.Error()))
@@ -96,10 +114,18 @@ func (s *cropService) Update(ctx context.Context, id int, input *model.UpdateCro
 	const op = "cropService.Update"
 	log := s.log.With(slog.String("op", op))
 
-	token := ctx.Value("token")
-	log.Info(fmt.Sprintf("token: %s", token))
+	token, err := s.authClient.AccessToken(ctx)
+	if err != nil {
+		log.Error("failed to get access token", slog.String("error", err.Error()))
+		return ErrAccessDenied
+	}
+	err = s.accessClient.Check(ctx, token, authService.ModeratorAccessLevel)
+	if err != nil {
+		log.Error("access check failed", slog.String("error", err.Error()))
+		return ErrAccessDenied
+	}
 
-	if err := s.cropRepo.Update(ctx, id, converter.ToRepoCropUpdateInput(input)); err != nil {
+	if err = s.cropRepo.Update(ctx, id, converter.ToRepoCropUpdateInput(input)); err != nil {
 		log.Error("failed to update crop", slog.String("error", err.Error()))
 		return ErrInternalServerError
 	}
@@ -110,6 +136,17 @@ func (s *cropService) Update(ctx context.Context, id int, input *model.UpdateCro
 func (s *cropService) Delete(ctx context.Context, id int) error {
 	const op = "cropService.Delete"
 	log := s.log.With(slog.String("op", op))
+
+	token, err := s.authClient.AccessToken(ctx)
+	if err != nil {
+		log.Error("failed to get access token", slog.String("error", err.Error()))
+		return ErrAccessDenied
+	}
+	err = s.accessClient.Check(ctx, token, authService.ModeratorAccessLevel)
+	if err != nil {
+		log.Error("access check failed", slog.String("error", err.Error()))
+		return ErrAccessDenied
+	}
 
 	if err := s.cropRepo.Delete(ctx, id); err != nil {
 		log.Error("failed to delete crop", slog.String("error", err.Error()))
@@ -123,6 +160,17 @@ func (s *cropService) AddRelation(ctx context.Context, cropId int, categoryId in
 	const op = "cropService.AddRelation"
 	log := s.log.With(slog.String("op", op))
 
+	token, err := s.authClient.AccessToken(ctx)
+	if err != nil {
+		log.Error("failed to get access token", slog.String("error", err.Error()))
+		return ErrAccessDenied
+	}
+	err = s.accessClient.Check(ctx, token, authService.ModeratorAccessLevel)
+	if err != nil {
+		log.Error("access check failed", slog.String("error", err.Error()))
+		return ErrAccessDenied
+	}
+
 	if err := s.cropCategoriesRepo.Create(ctx, cropId, categoryId); err != nil {
 		log.Error("failed to add crop category", slog.String("error", err.Error()))
 		return ErrInternalServerError
@@ -134,6 +182,17 @@ func (s *cropService) AddRelation(ctx context.Context, cropId int, categoryId in
 func (s *cropService) RemoveRelation(ctx context.Context, cropId int, categoryId int) error {
 	const op = "cropService.RemoveRelation"
 	log := s.log.With(slog.String("op", op))
+
+	token, err := s.authClient.AccessToken(ctx)
+	if err != nil {
+		log.Error("failed to get access token", slog.String("error", err.Error()))
+		return ErrAccessDenied
+	}
+	err = s.accessClient.Check(ctx, token, authService.ModeratorAccessLevel)
+	if err != nil {
+		log.Error("access check failed", slog.String("error", err.Error()))
+		return ErrAccessDenied
+	}
 
 	if err := s.cropCategoriesRepo.Delete(ctx, cropId, categoryId); err != nil {
 		log.Error("failed to remove crop category", slog.String("error", err.Error()))
