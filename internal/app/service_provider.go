@@ -16,6 +16,7 @@ import (
 	categoryRepo "github.com/nogavadu/articles-service/internal/repository/category"
 	cropRepo "github.com/nogavadu/articles-service/internal/repository/crop"
 	cropCategoriesRepo "github.com/nogavadu/articles-service/internal/repository/crop_categories"
+	statusRepo "github.com/nogavadu/articles-service/internal/repository/status"
 	"github.com/nogavadu/articles-service/internal/service"
 	articleServ "github.com/nogavadu/articles-service/internal/service/article"
 	authServ "github.com/nogavadu/articles-service/internal/service/auth"
@@ -51,6 +52,7 @@ type serviceProvider struct {
 	articleRepository          repository.ArticleRepository
 	articleImagesRepository    repository.ArticleImagesRepository
 	articleRelationsRepository repository.ArticleRelationsRepository
+	statusRepository           repository.StatusRepository
 
 	dbClient  db.Client
 	txManager db.TxManager
@@ -256,6 +258,13 @@ func (p *serviceProvider) ArticleRelationsRepository(ctx context.Context) reposi
 		p.articleRelationsRepository = articleRelationsRepo.New(p.DBClient(ctx))
 	}
 	return p.articleRelationsRepository
+}
+
+func (p *serviceProvider) StatusRepository(ctx context.Context) repository.StatusRepository {
+	if p.statusRepository == nil {
+		p.statusRepository = statusRepo.New(p.DBClient(ctx))
+	}
+	return p.statusRepository
 }
 
 func (p *serviceProvider) DBClient(ctx context.Context) db.Client {
