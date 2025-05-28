@@ -5,8 +5,7 @@ import "time"
 type ArticleGetAllParams struct {
 	CropId     *int
 	CategoryId *int
-	Limit      *int
-	Offset     *int
+	Status     *string
 }
 
 type Article struct {
@@ -21,6 +20,7 @@ type ArticleBody struct {
 	LatinName *string  `json:"latin_name,omitempty"`
 	Text      *string  `json:"text,omitempty"`
 	Images    []string `json:"images,omitempty"`
+	Status    string   `json:"status"`
 }
 
 type ArticleUpdateInput struct {
@@ -28,4 +28,5 @@ type ArticleUpdateInput struct {
 	LatinName *string  `json:"latin_name,omitempty"`
 	Text      *string  `json:"text,omitempty"`
 	Images    []string `json:"images,omitempty"`
+	Status    *string  `json:"status"`
 }

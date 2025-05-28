@@ -3,6 +3,7 @@ package article
 import (
 	"context"
 	"errors"
+	authService "github.com/nogavadu/articles-service/internal/clients/auth-service/grpc"
 	"github.com/nogavadu/articles-service/internal/domain/converter"
 	"github.com/nogavadu/articles-service/internal/domain/model"
 	"github.com/nogavadu/articles-service/internal/repository"
@@ -16,6 +17,7 @@ var (
 	ErrAlreadyExists       = errors.New("article already exists")
 	ErrInvalidArguments    = errors.New("invalid article arguments")
 	ErrInternalServerError = errors.New("internal server error")
+	ErrAccessDenied        = errors.New("access denied")
 )
 
 type articleService struct {
@@ -24,8 +26,12 @@ type articleService struct {
 	articleRepo          repository.ArticleRepository
 	articleImagesRepo    repository.ArticleImagesRepository
 	articleRelationsRepo repository.ArticleRelationsRepository
+	statusRepo           repository.StatusRepository
 
 	txManager db.TxManager
+
+	accessClient *authService.AccessServiceClient
+	authClient   *authService.AuthServiceClient
 }
 
 func New(
@@ -33,14 +39,20 @@ func New(
 	articleRepository repository.ArticleRepository,
 	articleImagesRepo repository.ArticleImagesRepository,
 	articleRelationsRepo repository.ArticleRelationsRepository,
+	statusRepo repository.StatusRepository,
 	txManager db.TxManager,
+	accessClient *authService.AccessServiceClient,
+	authClient *authService.AuthServiceClient,
 ) service.ArticleService {
 	return &articleService{
 		log:                  log,
 		articleRepo:          articleRepository,
 		articleImagesRepo:    articleImagesRepo,
 		articleRelationsRepo: articleRelationsRepo,
+		statusRepo:           statusRepo,
 		txManager:            txManager,
+		accessClient:         accessClient,
+		authClient:           authClient,
 	}
 }
 
@@ -57,7 +69,29 @@ func (s *articleService) Create(ctx context.Context, cropId int, categoryId int,
 			}
 		}()
 
-		articleId, errTx = s.articleRepo.Create(ctx, converter.ToRepoArticleBody(articleBody))
+		token, err := s.authClient.AccessToken(ctx)
+		if err != nil {
+			log.Error("failed to get access token", slog.String("error", err.Error()))
+			return ErrAccessDenied
+		}
+
+		status, err := s.statusRepo.GetByStatus(ctx, articleBody.Status)
+		if err != nil {
+			log.Error("failed to get status", slog.String("error", err.Error()))
+		}
+
+		accessLevel := authService.ModeratorAccessLevel
+		if status != nil && status.Id == 2 {
+			accessLevel = authService.UserAccessLevel
+		}
+
+		err = s.accessClient.Check(ctx, token, accessLevel)
+		if err != nil {
+			log.Error("access check failed", slog.String("error", err.Error()))
+			return ErrAccessDenied
+		}
+
+		articleId, errTx = s.articleRepo.Create(ctx, converter.ToRepoArticleBody(articleBody, status.Id))
 		if errTx != nil {
 			if errors.Is(errTx, articleRepo.ErrAlreadyExists) {
 				return ErrAlreadyExists
@@ -95,7 +129,20 @@ func (s *articleService) GetAll(ctx context.Context, params *model.ArticleGetAll
 			}
 		}()
 
-		repoArticles, errTx := s.articleRepo.GetAll(ctx, converter.ToRepoArticleGetAllParams(params))
+		var statusId int
+		if params.Status != nil {
+			status, errTx := s.statusRepo.GetByStatus(ctx, *params.Status)
+			if errTx != nil {
+				log.Error("failed to get status", slog.String("error", errTx.Error()))
+			}
+			if status != nil {
+				statusId = status.Id
+			}
+		} else {
+			statusId = 2
+		}
+
+		repoArticles, errTx := s.articleRepo.GetAll(ctx, converter.ToRepoArticleGetAllParams(params, statusId))
 		if errTx != nil {
 			return ErrInternalServerError
 		}

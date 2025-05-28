@@ -40,7 +40,7 @@ func (i *Implementation) GetAllHandler() http.HandlerFunc {
 }
 
 func articleGetAllQueryParams(r *http.Request) (*model.ArticleGetAllParams, error) {
-	options := &model.ArticleGetAllParams{}
+	params := &model.ArticleGetAllParams{}
 
 	cropIdStr := r.URL.Query().Get("crop_id")
 	if cropIdStr != "" {
@@ -48,7 +48,7 @@ func articleGetAllQueryParams(r *http.Request) (*model.ArticleGetAllParams, erro
 		if err != nil {
 			return nil, errors.New("invalid crop_id query param")
 		}
-		options.CropId = &id
+		params.CropId = &id
 	}
 
 	categoryIdStr := r.URL.Query().Get("category_id")
@@ -57,26 +57,13 @@ func articleGetAllQueryParams(r *http.Request) (*model.ArticleGetAllParams, erro
 		if err != nil {
 			return nil, errors.New("invalid category_id query param")
 		}
-		options.CategoryId = &id
+		params.CategoryId = &id
 	}
 
-	limitStr := r.URL.Query().Get("limit")
-	if limitStr != "" {
-		l, err := strconv.Atoi(limitStr)
-		if err != nil {
-			return nil, errors.New("invalid limit query param")
-		}
-		options.Limit = &l
+	status := r.URL.Query().Get("status")
+	if status != "" {
+		params.Status = &status
 	}
 
-	offsetStr := r.URL.Query().Get("offset")
-	if offsetStr != "" {
-		o, err := strconv.Atoi(offsetStr)
-		if err != nil {
-			return nil, errors.New("invalid offset query param")
-		}
-		options.Offset = &o
-	}
-
-	return options, nil
+	return params, nil
 }

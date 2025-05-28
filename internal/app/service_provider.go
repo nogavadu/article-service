@@ -237,7 +237,10 @@ func (p *serviceProvider) ArticleService(ctx context.Context) service.ArticleSer
 			p.ArticleRepository(ctx),
 			p.ArticleImagesRepository(ctx),
 			p.ArticleRelationsRepository(ctx),
+			p.StatusRepository(ctx),
 			p.TxManger(ctx),
+			p.AccessClient(),
+			p.AuthClient(),
 		)
 	}
 	return p.articleService

@@ -36,8 +36,8 @@ func (r *articleRepository) Create(
 	queryRaw, args, err := sq.
 		Insert("articles").
 		PlaceholderFormat(sq.Dollar).
-		Columns("title", "latin_name", "text", "created_at", "updated_at").
-		Values(articleBody.Title, articleBody.LatinName, articleBody.Text, time.Now(), time.Now()).
+		Columns("title", "latin_name", "text", "status", "created_at", "updated_at").
+		Values(articleBody.Title, articleBody.LatinName, articleBody.Text, articleBody.Status, time.Now(), time.Now()).
 		Suffix("RETURNING id").
 		ToSql()
 	if err != nil {
@@ -85,15 +85,7 @@ func (r *articleRepository) GetAll(
 		}
 	}
 
-	if params.Limit != nil {
-		builder = builder.Limit(uint64(*params.Limit))
-	}
-
-	if params.Offset != nil {
-		builder = builder.Offset(uint64(*params.Offset))
-	}
-
-	queryRaw, args, err := builder.ToSql()
+	queryRaw, args, err := builder.Where(sq.Eq{"a.status": params.Status}).ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
 	}

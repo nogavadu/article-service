@@ -17,20 +17,20 @@ func ToArticle(article *repoModel.Article, images []string) *model.Article {
 	}
 }
 
-func ToRepoArticleBody(body *model.ArticleBody) *repoModel.ArticleBody {
+func ToRepoArticleBody(body *model.ArticleBody, status int) *repoModel.ArticleBody {
 	return &repoModel.ArticleBody{
 		Title:     body.Title,
 		LatinName: body.LatinName,
 		Text:      body.Text,
+		Status:    status,
 	}
 }
 
-func ToRepoArticleGetAllParams(params *model.ArticleGetAllParams) *repoModel.ArticleGetAllParams {
+func ToRepoArticleGetAllParams(params *model.ArticleGetAllParams, status int) *repoModel.ArticleGetAllParams {
 	return &repoModel.ArticleGetAllParams{
 		CropId:     params.CropId,
 		CategoryId: params.CategoryId,
-		Limit:      params.Limit,
-		Offset:     params.Offset,
+		Status:     status,
 	}
 }
 

@@ -5,8 +5,7 @@ import "time"
 type ArticleGetAllParams struct {
 	CropId     *int
 	CategoryId *int
-	Limit      *int
-	Offset     *int
+	Status     int
 }
 
 type Article struct {
@@ -20,10 +19,12 @@ type ArticleBody struct {
 	Title     string  `db:"title"`
 	LatinName *string `db:"latin_name"`
 	Text      *string `db:"text"`
+	Status    int     `db:"status"`
 }
 
 type UpdateInput struct {
 	Title     *string `db:"title"`
 	LatinName *string `db:"latin_name"`
 	Text      *string `db:"text"`
+	Status    *int    `db:"status"`
 }
