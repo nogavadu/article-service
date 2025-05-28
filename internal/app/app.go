@@ -82,10 +82,10 @@ func (a *App) initCropAPI(ctx context.Context, r chi.Router) {
 			r.Post("/", cropApi.CreateHandler())
 			r.Patch("/{cropId}", cropApi.UpdateHandler())
 			r.Delete("/{cropId}", cropApi.DeleteHandler())
-		})
 
-		r.Post("/{cropId}/{categoryId}", cropApi.AddRelationHandler())
-		r.Delete("/{cropId}/{categoryId}", cropApi.RemoveRelationHandler())
+			r.Post("/{cropId}/{categoryId}", cropApi.AddRelationHandler())
+			r.Delete("/{cropId}/{categoryId}", cropApi.RemoveRelationHandler())
+		})
 	})
 }
 
