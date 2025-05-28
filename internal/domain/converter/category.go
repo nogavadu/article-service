@@ -16,18 +16,18 @@ func ToCategory(category *repoModel.Category) *model.Category {
 	}
 }
 
-func ToRepoCategoryInfo(categoryInfo *model.CategoryInfo) *repoModel.CategoryInfo {
+func ToRepoCategoryInfo(categoryInfo *model.CategoryInfo, status int) *repoModel.CategoryInfo {
 	return &repoModel.CategoryInfo{
 		Name:        categoryInfo.Name,
 		Description: categoryInfo.Description,
+		Status:      status,
 	}
 }
 
-func ToRepoCategoryGetAllParams(params *model.CategoryGetAllParams) *repoModel.CategoryGetAllParams {
+func ToRepoCategoryGetAllParams(params *model.CategoryGetAllParams, status int) *repoModel.CategoryGetAllParams {
 	return &repoModel.CategoryGetAllParams{
 		CropId: params.CropId,
-		Limit:  params.Limit,
-		Offset: params.Offset,
+		Status: status,
 	}
 }
 

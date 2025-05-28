@@ -200,7 +200,10 @@ func (p *serviceProvider) CategoryService(ctx context.Context) service.CategoryS
 			p.Logger(),
 			p.CategoryRepository(ctx),
 			p.CropCategoriesRepository(ctx),
+			p.StatusRepository(ctx),
 			p.TxManger(ctx),
+			p.AccessClient(),
+			p.AuthClient(),
 		)
 	}
 	return p.categoryService

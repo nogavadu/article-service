@@ -62,7 +62,7 @@ func NewAccessServiceClient(
 }
 
 func (c *AccessServiceClient) Check(ctx context.Context, accessToken string, level int) error {
-	const op = "AuthServiceClient.Check"
+	const op = "AccessServiceClient.Check"
 
 	md := metadata.Pairs(
 		"authorization", fmt.Sprintf("Bearer %s", accessToken),
@@ -71,7 +71,7 @@ func (c *AccessServiceClient) Check(ctx context.Context, accessToken string, lev
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	_, err := c.api.Check(ctx, &accessService.CheckRequest{
-		RequiredLvl: uint32(level),
+		RequiredLvl: uint32(level + 1),
 	})
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)

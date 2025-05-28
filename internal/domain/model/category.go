@@ -8,8 +8,7 @@ type CategoryCreateParams struct {
 
 type CategoryGetAllParams struct {
 	CropId *int
-	Limit  *int
-	Offset *int
+	Status *string
 }
 
 type Category struct {
@@ -23,10 +22,12 @@ type CategoryInfo struct {
 	Name        string  `json:"name" validate:"required"`
 	Description *string `json:"description,omitempty"`
 	Icon        *string `json:"icon,omitempty"`
+	Status      string  `json:"status"`
 }
 
 type UpdateCategoryInput struct {
 	Name        *string `json:"name,omitempty"`
 	Description *string `json:"description,omitempty"`
 	Icon        *string `json:"icon,omitempty"`
+	Status      *string `json:"status"`
 }

@@ -4,8 +4,7 @@ import "time"
 
 type CategoryGetAllParams struct {
 	CropId *int
-	Limit  *int
-	Offset *int
+	Status int
 }
 
 type Category struct {
@@ -19,10 +18,12 @@ type CategoryInfo struct {
 	Name        string  `db:"name"`
 	Description *string `db:"description"`
 	Icon        *string `db:"icon"`
+	Status      int     `db:"status"`
 }
 
 type UpdateInput struct {
 	Name        *string `db:"name"`
 	Description *string `db:"description"`
 	Icon        *string `db:"icon"`
+	Status      *int    `db:"status"`
 }

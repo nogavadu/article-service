@@ -35,8 +35,8 @@ func (r *categoryRepository) Create(ctx context.Context, info *categoryRepoModel
 	queryRaw, args, err := sq.
 		Insert("categories").
 		PlaceholderFormat(sq.Dollar).
-		Columns("name", "description", "icon", "created_at", "updated_at").
-		Values(info.Name, info.Description, info.Icon, time.Now(), time.Now()).
+		Columns("name", "description", "icon", "status", "created_at", "updated_at").
+		Values(info.Name, info.Description, info.Icon, info.Status, time.Now(), time.Now()).
 		Suffix(fmt.Sprintf("RETURNING %s", "id")).
 		ToSql()
 
@@ -78,14 +78,9 @@ func (r *categoryRepository) GetAll(
 		)
 	}
 
-	builder = builder.GroupBy("c.id", "c.name")
-
-	if params.Limit != nil {
-		builder = builder.Limit(uint64(*params.Limit))
-	}
-	if params.Offset != nil {
-		builder = builder.Offset(uint64(*params.Offset))
-	}
+	builder = builder.
+		Where(sq.Eq{"c.status": params.Status}).
+		GroupBy("c.id", "c.name")
 
 	queryRaw, args, err := builder.ToSql()
 	if err != nil {

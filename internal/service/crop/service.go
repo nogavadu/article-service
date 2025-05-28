@@ -3,7 +3,6 @@ package crop
 import (
 	"context"
 	"errors"
-	"fmt"
 	authService "github.com/nogavadu/articles-service/internal/clients/auth-service/grpc"
 	"github.com/nogavadu/articles-service/internal/domain/converter"
 	"github.com/nogavadu/articles-service/internal/domain/model"
@@ -65,7 +64,6 @@ func (s *cropService) Create(ctx context.Context, cropInfo *model.CropInfo) (int
 	}
 
 	status, err := s.statusRepo.GetByStatus(ctx, cropInfo.Status)
-	fmt.Println(status)
 	if err != nil {
 		log.Error("failed to get status", slog.String("error", err.Error()))
 	}
@@ -193,7 +191,7 @@ func (s *cropService) AddRelation(ctx context.Context, cropId int, categoryId in
 		log.Error("failed to get access token", slog.String("error", err.Error()))
 		return ErrAccessDenied
 	}
-	err = s.accessClient.Check(ctx, token, authService.ModeratorAccessLevel)
+	err = s.accessClient.Check(ctx, token, authService.UserAccessLevel)
 	if err != nil {
 		log.Error("access check failed", slog.String("error", err.Error()))
 		return ErrAccessDenied
@@ -216,13 +214,13 @@ func (s *cropService) RemoveRelation(ctx context.Context, cropId int, categoryId
 		log.Error("failed to get access token", slog.String("error", err.Error()))
 		return ErrAccessDenied
 	}
-	err = s.accessClient.Check(ctx, token, authService.ModeratorAccessLevel)
+	err = s.accessClient.Check(ctx, token, authService.UserAccessLevel)
 	if err != nil {
 		log.Error("access check failed", slog.String("error", err.Error()))
 		return ErrAccessDenied
 	}
 
-	if err := s.cropCategoriesRepo.Delete(ctx, cropId, categoryId); err != nil {
+	if err = s.cropCategoriesRepo.Delete(ctx, cropId, categoryId); err != nil {
 		log.Error("failed to remove crop category", slog.String("error", err.Error()))
 		return ErrInternalServerError
 	}
