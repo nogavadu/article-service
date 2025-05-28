@@ -22,11 +22,12 @@ func ToCropInfo(cropInfo *repoModel.CropInfo) *model.CropInfo {
 	}
 }
 
-func ToRepoCropInfo(info *model.CropInfo) *repoModel.CropInfo {
+func ToRepoCropInfo(info *model.CropInfo, status int) *repoModel.CropInfo {
 	return &repoModel.CropInfo{
 		Name:        info.Name,
 		Description: info.Description,
 		Img:         info.Img,
+		Status:      status,
 	}
 }
 

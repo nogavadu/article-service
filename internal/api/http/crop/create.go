@@ -38,7 +38,6 @@ func (i *Implementation) CreateHandler() http.HandlerFunc {
 			}
 		}
 
-		fmt.Printf("API CROP INFO: %s\n", reqData.CropInfo)
 		id, err := i.cropServ.Create(r.Context(), &reqData.CropInfo)
 		if err != nil {
 			if errors.Is(err, cropServ.ErrAlreadyExists) {

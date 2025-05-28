@@ -12,7 +12,8 @@ type getAllResponse struct {
 
 func (i *Implementation) GetAllHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		crops, err := i.cropServ.GetAll(r.Context())
+		params := cropGetAllParams(r)
+		crops, err := i.cropServ.GetAll(r.Context(), params)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -22,4 +23,15 @@ func (i *Implementation) GetAllHandler() http.HandlerFunc {
 			Data: crops,
 		})
 	}
+}
+
+func cropGetAllParams(r *http.Request) *model.CropGetAllParams {
+	params := &model.CropGetAllParams{}
+
+	status := r.URL.Query().Get("status")
+	if status != "" {
+		params.Status = &status
+	}
+
+	return params
 }

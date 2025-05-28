@@ -171,6 +171,7 @@ func (p *serviceProvider) CropService(ctx context.Context) service.CropService {
 			p.Logger(),
 			p.CropRepository(ctx),
 			p.CropCategoriesRepository(ctx),
+			p.StatusRepository(ctx),
 			p.TxManger(ctx),
 			p.AccessClient(),
 			p.AuthClient(),

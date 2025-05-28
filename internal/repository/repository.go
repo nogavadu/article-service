@@ -10,7 +10,7 @@ import (
 
 type CropRepository interface {
 	Create(ctx context.Context, info *cropRepoModel.CropInfo) (int, error)
-	GetAll(ctx context.Context) ([]cropRepoModel.Crop, error)
+	GetAll(ctx context.Context, statusId int) ([]cropRepoModel.Crop, error)
 	GetById(ctx context.Context, id int) (*cropRepoModel.Crop, error)
 	Update(ctx context.Context, id int, input *cropRepoModel.UpdateInput) error
 	Delete(ctx context.Context, id int) error
@@ -50,4 +50,5 @@ type ArticleImagesRepository interface {
 type StatusRepository interface {
 	Create(ctx context.Context, status string) (int, error)
 	GetAll(ctx context.Context) ([]statusRepoModel.Status, error)
+	GetByStatus(ctx context.Context, status string) (*statusRepoModel.Status, error)
 }

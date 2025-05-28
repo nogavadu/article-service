@@ -3,6 +3,7 @@ package crop
 import (
 	"context"
 	"errors"
+	"fmt"
 	authService "github.com/nogavadu/articles-service/internal/clients/auth-service/grpc"
 	"github.com/nogavadu/articles-service/internal/domain/converter"
 	"github.com/nogavadu/articles-service/internal/domain/model"
@@ -26,6 +27,7 @@ type cropService struct {
 
 	cropRepo           repository.CropRepository
 	cropCategoriesRepo repository.CropCategoriesRepository
+	statusRepo         repository.StatusRepository
 	txManager          db.TxManager
 
 	accessClient *authService.AccessServiceClient
@@ -36,6 +38,7 @@ func New(
 	log *slog.Logger,
 	cropRepository repository.CropRepository,
 	cropCategoriesRepo repository.CropCategoriesRepository,
+	statusRepo repository.StatusRepository,
 	txManager db.TxManager,
 	accessClient *authService.AccessServiceClient,
 	authClient *authService.AuthServiceClient,
@@ -44,6 +47,7 @@ func New(
 		log:                log,
 		cropRepo:           cropRepository,
 		cropCategoriesRepo: cropCategoriesRepo,
+		statusRepo:         statusRepo,
 		txManager:          txManager,
 		accessClient:       accessClient,
 		authClient:         authClient,
@@ -59,13 +63,24 @@ func (s *cropService) Create(ctx context.Context, cropInfo *model.CropInfo) (int
 		log.Error("failed to get access token", slog.String("error", err.Error()))
 		return 0, ErrAccessDenied
 	}
-	err = s.accessClient.Check(ctx, token, authService.ModeratorAccessLevel)
+
+	status, err := s.statusRepo.GetByStatus(ctx, cropInfo.Status)
+	fmt.Println(status)
+	if err != nil {
+		log.Error("failed to get status", slog.String("error", err.Error()))
+	}
+	accessLevel := authService.ModeratorAccessLevel
+	if status != nil && status.Id == 2 {
+		accessLevel = authService.UserAccessLevel
+	}
+
+	err = s.accessClient.Check(ctx, token, accessLevel)
 	if err != nil {
 		log.Error("access check failed", slog.String("error", err.Error()))
 		return 0, ErrAccessDenied
 	}
 
-	cropID, err := s.cropRepo.Create(ctx, converter.ToRepoCropInfo(cropInfo))
+	cropID, err := s.cropRepo.Create(ctx, converter.ToRepoCropInfo(cropInfo, status.Id))
 	if err != nil {
 		log.Error("failed to create crop", slog.String("error", err.Error()))
 
@@ -79,11 +94,24 @@ func (s *cropService) Create(ctx context.Context, cropInfo *model.CropInfo) (int
 	return cropID, nil
 }
 
-func (s *cropService) GetAll(ctx context.Context) ([]model.Crop, error) {
+func (s *cropService) GetAll(ctx context.Context, params *model.CropGetAllParams) ([]model.Crop, error) {
 	const op = "cropService.GetAll"
 	log := s.log.With(slog.String("op", op))
 
-	repoCrops, err := s.cropRepo.GetAll(ctx)
+	var statusId int
+	if params.Status != nil {
+		status, err := s.statusRepo.GetByStatus(ctx, *params.Status)
+		if err != nil {
+			log.Error("failed to get status", slog.String("error", err.Error()))
+		}
+		if status != nil {
+			statusId = status.Id
+		}
+	} else {
+		statusId = 2
+	}
+
+	repoCrops, err := s.cropRepo.GetAll(ctx, statusId)
 	if err != nil {
 		log.Error("failed to get crops", slog.String("error", err.Error()))
 		return nil, ErrInternalServerError

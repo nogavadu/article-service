@@ -34,8 +34,8 @@ func (r *cropRepository) Create(ctx context.Context, cropInfo *cropRepoModel.Cro
 	queryRaw, args, err := sq.
 		Insert("crops").
 		PlaceholderFormat(sq.Dollar).
-		Columns("name", "description", "img", "created_at", "updated_at").
-		Values(cropInfo.Name, cropInfo.Description, cropInfo.Img, time.Now(), time.Now()).
+		Columns("name", "description", "img", "status", "created_at", "updated_at").
+		Values(cropInfo.Name, cropInfo.Description, cropInfo.Img, cropInfo.Status, time.Now(), time.Now()).
 		Suffix("RETURNING id").
 		ToSql()
 	if err != nil {
@@ -62,10 +62,12 @@ func (r *cropRepository) Create(ctx context.Context, cropInfo *cropRepoModel.Cro
 	return cropId, nil
 }
 
-func (r *cropRepository) GetAll(ctx context.Context) ([]cropRepoModel.Crop, error) {
-	queryRaw, _, err := sq.
+func (r *cropRepository) GetAll(ctx context.Context, statusId int) ([]cropRepoModel.Crop, error) {
+	queryRaw, args, err := sq.
 		Select("id", "name", "description", "img", "created_at", "updated_at").
+		PlaceholderFormat(sq.Dollar).
 		From("crops").
+		Where(sq.Eq{"status": statusId}).
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
@@ -77,7 +79,7 @@ func (r *cropRepository) GetAll(ctx context.Context) ([]cropRepoModel.Crop, erro
 	}
 
 	var crops []cropRepoModel.Crop
-	if err = r.dbc.DB().ScanAllContext(ctx, &crops, query); err != nil {
+	if err = r.dbc.DB().ScanAllContext(ctx, &crops, query, args...); err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInternalServerError, err)
 	}
 
