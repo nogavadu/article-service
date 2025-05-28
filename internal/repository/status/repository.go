@@ -21,7 +21,7 @@ func New(dbc db.Client) repository.StatusRepository {
 
 func (r *statusRepository) Create(ctx context.Context, status string) (int, error) {
 	queryRaw, args, err := sq.
-		Insert("status").
+		Insert("entity_status").
 		PlaceholderFormat(sq.Dollar).
 		Columns("status").
 		Values(status).
@@ -48,7 +48,7 @@ func (r *statusRepository) GetAll(ctx context.Context) ([]model.Status, error) {
 	queryRaw, args, err := sq.
 		Select("id", "status").
 		PlaceholderFormat(sq.Dollar).
-		From("status").
+		From("entity_status").
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("failed to make query: %w", err)
