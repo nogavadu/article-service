@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE entity_status
 (
-    id     INT PRIMARY KEY,
+    id     SERIAL PRIMARY KEY,
     status VARCHAR NOT NULL UNIQUE
 );
 
