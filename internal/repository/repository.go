@@ -5,6 +5,7 @@ import (
 	articleRepoModel "github.com/nogavadu/articles-service/internal/repository/article/model"
 	categoryRepoModel "github.com/nogavadu/articles-service/internal/repository/category/model"
 	cropRepoModel "github.com/nogavadu/articles-service/internal/repository/crop/model"
+	statusRepoModel "github.com/nogavadu/articles-service/internal/repository/status/model"
 )
 
 type CropRepository interface {
@@ -44,4 +45,9 @@ type ArticleImagesRepository interface {
 	CreateBulk(ctx context.Context, articleId int, images []string) error
 	GetAll(ctx context.Context, articleId int) ([]string, error)
 	DeleteBulk(ctx context.Context, articleId int) error
+}
+
+type StatusRepository interface {
+	Create(ctx context.Context, status string) (int, error)
+	GetAll(ctx context.Context) ([]statusRepoModel.Status, error)
 }
