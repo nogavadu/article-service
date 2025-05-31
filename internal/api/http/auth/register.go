@@ -10,7 +10,7 @@ import (
 )
 
 type registerRequest struct {
-	model.UserAuthData
+	model.UserRegisterData
 }
 
 type registerResponse struct {
@@ -29,7 +29,7 @@ func (i *Implementation) RegisterHandler() http.HandlerFunc {
 			return
 		}
 
-		userId, err := i.authServ.Register(r.Context(), &reqData.UserAuthData)
+		userId, err := i.authServ.Register(r.Context(), &reqData.UserRegisterData)
 		if err != nil {
 			response.Err(w, r, err.Error(), http.StatusBadRequest)
 			return

@@ -23,7 +23,7 @@ func New(log *slog.Logger, asc *grpc.AuthServiceClient) service.AuthService {
 	}
 }
 
-func (s *authService) Register(ctx context.Context, authData *model.UserAuthData) (int, error) {
+func (s *authService) Register(ctx context.Context, authData *model.UserRegisterData) (int, error) {
 	const op = "authService.Register"
 	log := s.log.With(slog.String("op", op))
 

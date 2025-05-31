@@ -12,6 +12,11 @@ type UserInfo struct {
 	Role   string  `json:"role"`
 }
 
+type UserRegisterData struct {
+	Name string `json:"name,omitempty"`
+	UserAuthData
+}
+
 type UserAuthData struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`

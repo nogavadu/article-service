@@ -6,7 +6,7 @@ import (
 )
 
 type AuthService interface {
-	Register(ctx context.Context, authData *model.UserAuthData) (int, error)
+	Register(ctx context.Context, authData *model.UserRegisterData) (int, error)
 	Login(ctx context.Context, authData *model.UserAuthData) (string, error)
 	GetRefreshToken(ctx context.Context) (string, error)
 }
