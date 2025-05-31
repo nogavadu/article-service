@@ -144,6 +144,7 @@ func (a *App) initHttpServer(ctx context.Context) error {
 
 	router.Route("/api", func(r chi.Router) {
 		a.initAuthAPI(r)
+		a.initUserAPI(r)
 		a.initCropAPI(ctx, r)
 		a.initCategoryAPI(ctx, r)
 		a.initArticleAPI(ctx, r)
