@@ -23,6 +23,7 @@ type CategoryInfo struct {
 	Description *string `json:"description,omitempty"`
 	Icon        *string `json:"icon,omitempty"`
 	Status      string  `json:"status"`
+	Author      *User   `json:"author,omitempty"`
 }
 
 type UpdateCategoryInput struct {

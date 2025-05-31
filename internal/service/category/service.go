@@ -31,6 +31,7 @@ type categoryService struct {
 
 	accessClient *authService.AccessServiceClient
 	authClient   *authService.AuthServiceClient
+	userClient   *authService.UserServiceClient
 }
 
 func New(
@@ -41,6 +42,7 @@ func New(
 	txManager db.TxManager,
 	accessClient *authService.AccessServiceClient,
 	authClient *authService.AuthServiceClient,
+	userClient *authService.UserServiceClient,
 ) service.CategoryService {
 	return &categoryService{
 		log:                log,
@@ -50,11 +52,13 @@ func New(
 		txManager:          txManager,
 		accessClient:       accessClient,
 		authClient:         authClient,
+		userClient:         userClient,
 	}
 }
 
 func (s *categoryService) Create(
 	ctx context.Context,
+	userId int,
 	categoryInfo *model.CategoryInfo,
 	params *model.CategoryCreateParams,
 ) (int, error) {
@@ -92,7 +96,7 @@ func (s *categoryService) Create(
 			return ErrAccessDenied
 		}
 
-		id, errTx = s.categoryRepo.Create(ctx, converter.ToRepoCategoryInfo(categoryInfo, status.Id))
+		id, errTx = s.categoryRepo.Create(ctx, converter.ToRepoCategoryInfo(categoryInfo, status.Id, categoryInfo.Author.Id))
 		if errTx != nil {
 			if errors.Is(errTx, categoryRepo.ErrInvalidArguments) {
 				return ErrInvalidArguments
@@ -142,7 +146,13 @@ func (s *categoryService) GetAll(ctx context.Context, params *model.CategoryGetA
 
 	categories := make([]model.Category, 0, len(repoCategories))
 	for _, c := range repoCategories {
-		categories = append(categories, *converter.ToCategory(&c))
+		repoStatus, err := s.statusRepo.GetById(ctx, c.Status)
+		if err != nil {
+			log.Error("failed to get status", slog.String("error", err.Error()))
+			continue
+		}
+
+		categories = append(categories, *converter.ToCategory(&c, repoStatus.Status, nil))
 	}
 
 	return categories, nil
@@ -152,29 +162,65 @@ func (s *categoryService) GetById(ctx context.Context, id int) (*model.Category,
 	const op = "category.GetById"
 	log := s.log.With(slog.String("op", op))
 
-	repoCategory, err := s.categoryRepo.GetById(ctx, id)
-	if err != nil {
-		log.Error("failed to get category", slog.String("error", err.Error()))
-		if errors.Is(err, categoryRepo.ErrNotFound) {
-			return nil, ErrNotFound
-		}
-		if errors.Is(err, categoryRepo.ErrInvalidArguments) {
-			return nil, ErrInvalidArguments
+	var category *model.Category
+	err := s.txManager.ReadCommitted(ctx, func(ctx context.Context) error {
+		var errTx error
+		defer func() {
+			if errTx != nil {
+				log.Error("failed to get category", slog.String("error", errTx.Error()))
+			}
+		}()
+
+		repoCategory, errTx := s.categoryRepo.GetById(ctx, id)
+		if errTx != nil {
+			log.Error("failed to get category", slog.String("error", errTx.Error()))
+			if errors.Is(errTx, categoryRepo.ErrNotFound) {
+				return ErrNotFound
+			}
+			if errors.Is(errTx, categoryRepo.ErrInvalidArguments) {
+				return ErrInvalidArguments
+			}
+
+			return ErrInternalServerError
 		}
 
-		return nil, ErrInternalServerError
-	}
+		repoStatus, errTx := s.statusRepo.GetById(ctx, repoCategory.Status)
+		if errTx != nil {
+			return ErrNotFound
+		}
 
-	return converter.ToCategory(repoCategory), nil
+		var author *model.User
+		if repoCategory.Author != nil {
+			user, errTx := s.userClient.GetById(ctx, *repoCategory.Author)
+			if errTx != nil {
+				return ErrNotFound
+			}
+			author = user
+		}
+
+		category = converter.ToCategory(repoCategory, repoStatus.Status, author)
+
+		return nil
+	})
+
+	return category, err
 }
 
 func (s *categoryService) Update(ctx context.Context, id int, input *model.UpdateCategoryInput) error {
 	const op = "category.Update"
 	log := s.log.With(slog.String("op", op))
 
-	if err := s.categoryRepo.Update(ctx, id, converter.ToRepoCategoryUpdateInput(input)); err != nil {
-		log.Error("failed to update category", slog.String("error", err.Error()))
-		return ErrInternalServerError
+	if input.Status != nil {
+		status, _ := s.statusRepo.GetByStatus(ctx, *input.Status)
+		if err := s.categoryRepo.Update(ctx, id, converter.ToRepoCategoryUpdateInput(input, &status.Id)); err != nil {
+			log.Error("failed to update category", slog.String("error", err.Error()))
+			return ErrInternalServerError
+		}
+	} else {
+		if err := s.categoryRepo.Update(ctx, id, converter.ToRepoCategoryUpdateInput(input, nil)); err != nil {
+			log.Error("failed to update category", slog.String("error", err.Error()))
+			return ErrInternalServerError
+		}
 	}
 
 	return nil

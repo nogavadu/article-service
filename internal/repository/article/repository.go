@@ -36,8 +36,24 @@ func (r *articleRepository) Create(
 	queryRaw, args, err := sq.
 		Insert("articles").
 		PlaceholderFormat(sq.Dollar).
-		Columns("title", "latin_name", "text", "status", "created_at", "updated_at").
-		Values(articleBody.Title, articleBody.LatinName, articleBody.Text, articleBody.Status, time.Now(), time.Now()).
+		Columns(
+			"title",
+			"latin_name",
+			"text",
+			"author",
+			"status",
+			"created_at",
+			"updated_at",
+		).
+		Values(
+			articleBody.Title,
+			articleBody.LatinName,
+			articleBody.Text,
+			articleBody.Author,
+			articleBody.Status,
+			time.Now(),
+			time.Now(),
+		).
 		Suffix("RETURNING id").
 		ToSql()
 	if err != nil {
@@ -69,7 +85,16 @@ func (r *articleRepository) GetAll(
 	params *articleRepoModel.ArticleGetAllParams,
 ) ([]articleRepoModel.Article, error) {
 	builder := sq.
-		Select("a.id, a.title, a.latin_name, a.text").
+		Select(
+			"a.id",
+			"a.title",
+			"a.latin_name",
+			"a.text",
+			"a.author",
+			"a.status",
+			"a.created_at",
+			"a.updated_at",
+		).
 		PlaceholderFormat(sq.Dollar).
 		From("articles AS a")
 
@@ -105,7 +130,16 @@ func (r *articleRepository) GetAll(
 
 func (r *articleRepository) GetById(ctx context.Context, id int) (*articleRepoModel.Article, error) {
 	queryRaw, args, err := sq.
-		Select("id, title, latin_name, text").
+		Select(
+			"id",
+			"title",
+			"latin_name",
+			"text",
+			"author",
+			"status",
+			"created_at",
+			"updated_at",
+		).
 		PlaceholderFormat(sq.Dollar).
 		From("articles").
 		Where(sq.Eq{"id": id}).
@@ -129,21 +163,29 @@ func (r *articleRepository) GetById(ctx context.Context, id int) (*articleRepoMo
 }
 
 func (r *articleRepository) Update(ctx context.Context, id int, input *articleRepoModel.UpdateInput) error {
-	builder := sq.
-		Update("articles").
-		PlaceholderFormat(sq.Dollar)
+	values := map[string]interface{}{
+		"updated_at": time.Now(),
+	}
 
 	if input.Title != nil {
-		builder = builder.Set("title", input.Title)
+		values["title"] = input.Title
 	}
 	if input.LatinName != nil {
-		builder = builder.Set("latin_name", input.LatinName)
+		values["latin_name"] = input.LatinName
 	}
 	if input.Text != nil {
-		builder = builder.Set("text", input.Text)
+		values["text"] = input.Text
+	}
+	if input.Status != nil {
+		values["status"] = input.Status
 	}
 
-	queryRaw, args, err := builder.Where(sq.Eq{"id": id}).ToSql()
+	queryRaw, args, err := sq.
+		Update("articles").
+		PlaceholderFormat(sq.Dollar).
+		SetMap(values).
+		Where(sq.Eq{"id": id}).
+		ToSql()
 	if err != nil {
 		return fmt.Errorf("failed to build query: %s: %w", ErrInternalServerError, err)
 	}

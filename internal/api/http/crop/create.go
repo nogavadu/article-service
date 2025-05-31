@@ -13,7 +13,8 @@ import (
 )
 
 type createRequest struct {
-	model.CropInfo
+	UserId int            `json:"user_id" validate:"required"`
+	Crop   model.CropInfo `json:"crop" validate:"required"`
 }
 
 type createResponse struct {
@@ -31,14 +32,14 @@ func (i *Implementation) CreateHandler() http.HandlerFunc {
 			response.Err(w, r, fmt.Sprintf("invalid arguments: %s", err), http.StatusBadRequest)
 			return
 		}
-		if reqData.Img != nil {
-			if err := validator.New().Var(reqData.Img, "url"); err != nil {
+		if reqData.Crop.Img != nil {
+			if err := validator.New().Var(reqData.Crop.Img, "url"); err != nil {
 				response.Err(w, r, "invalid image url", http.StatusBadRequest)
 				return
 			}
 		}
 
-		id, err := i.cropServ.Create(r.Context(), &reqData.CropInfo)
+		id, err := i.cropServ.Create(r.Context(), reqData.UserId, &reqData.Crop)
 		if err != nil {
 			if errors.Is(err, cropServ.ErrAlreadyExists) {
 				response.Err(w, r, err.Error(), http.StatusBadRequest)

@@ -69,6 +69,14 @@ func (a *App) initAuthAPI(r chi.Router) {
 	})
 }
 
+func (a *App) initUserAPI(r chi.Router) {
+	userApi := a.serviceProvider.UserImpl()
+
+	r.Route("/users", func(r chi.Router) {
+		r.Get("/{userId}", userApi.GetByIdHandler())
+	})
+}
+
 func (a *App) initCropAPI(ctx context.Context, r chi.Router) {
 	cropApi := a.serviceProvider.CropImpl(ctx)
 

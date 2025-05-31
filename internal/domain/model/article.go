@@ -21,6 +21,7 @@ type ArticleBody struct {
 	Text      *string  `json:"text,omitempty"`
 	Images    []string `json:"images,omitempty"`
 	Status    string   `json:"status"`
+	Author    *User    `json:"author,omitempty"`
 }
 
 type ArticleUpdateInput struct {

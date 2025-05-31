@@ -51,4 +51,5 @@ type StatusRepository interface {
 	Create(ctx context.Context, status string) (int, error)
 	GetAll(ctx context.Context) ([]statusRepoModel.Status, error)
 	GetByStatus(ctx context.Context, status string) (*statusRepoModel.Status, error)
+	GetById(ctx context.Context, id int) (*statusRepoModel.Status, error)
 }

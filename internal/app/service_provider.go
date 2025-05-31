@@ -6,6 +6,7 @@ import (
 	"github.com/nogavadu/articles-service/internal/api/http/auth"
 	"github.com/nogavadu/articles-service/internal/api/http/category"
 	"github.com/nogavadu/articles-service/internal/api/http/crop"
+	"github.com/nogavadu/articles-service/internal/api/http/user"
 	"github.com/nogavadu/articles-service/internal/clients/auth-service/grpc"
 	"github.com/nogavadu/articles-service/internal/config"
 	"github.com/nogavadu/articles-service/internal/config/env"
@@ -22,6 +23,7 @@ import (
 	authServ "github.com/nogavadu/articles-service/internal/service/auth"
 	categoryServ "github.com/nogavadu/articles-service/internal/service/category"
 	cropServ "github.com/nogavadu/articles-service/internal/service/crop"
+	userServ "github.com/nogavadu/articles-service/internal/service/user"
 	"github.com/nogavadu/platform_common/pkg/db"
 	"github.com/nogavadu/platform_common/pkg/db/pg"
 	"github.com/nogavadu/platform_common/pkg/db/transaction"
@@ -40,11 +42,13 @@ type serviceProvider struct {
 	cropImpl     *crop.Implementation
 	categoryImpl *category.Implementation
 	articlesImpl *article.Implementation
+	userImpl     *user.Implementation
 
 	authService     service.AuthService
 	cropService     service.CropService
 	categoryService service.CategoryService
 	articleService  service.ArticleService
+	userService     service.UserService
 
 	cropRepository             repository.CropRepository
 	categoryRepository         repository.CategoryRepository
@@ -59,6 +63,7 @@ type serviceProvider struct {
 
 	authClient   *grpc.AuthServiceClient
 	accessClient *grpc.AccessServiceClient
+	userClient   *grpc.UserServiceClient
 }
 
 func newServiceProvider() *serviceProvider {
@@ -158,6 +163,42 @@ func (p *serviceProvider) AccessClient() *grpc.AccessServiceClient {
 	return p.accessClient
 }
 
+func (p *serviceProvider) UserImpl() *user.Implementation {
+	if p.userImpl == nil {
+		p.userImpl = user.New(p.UserService())
+	}
+
+	return p.userImpl
+}
+
+func (p *serviceProvider) UserService() service.UserService {
+	if p.userService == nil {
+		p.userService = userServ.New(
+			p.Logger(),
+			p.UserClient(),
+		)
+	}
+	return p.userService
+}
+
+func (p *serviceProvider) UserClient() *grpc.UserServiceClient {
+	if p.userClient == nil {
+		c, err := grpc.NewUserServiceClient(
+			p.Logger(),
+			p.AuthServiceConfig().Address(),
+			p.AuthServiceConfig().Timeout(),
+			p.AuthServiceConfig().RetriesCount(),
+		)
+		if err != nil {
+			p.Logger().Error("failed to create auth service client", slog.String("err", err.Error()))
+		}
+
+		p.userClient = c
+	}
+
+	return p.userClient
+}
+
 func (p *serviceProvider) CropImpl(ctx context.Context) *crop.Implementation {
 	if p.cropImpl == nil {
 		p.cropImpl = crop.New(p.CropService(ctx))
@@ -175,6 +216,7 @@ func (p *serviceProvider) CropService(ctx context.Context) service.CropService {
 			p.TxManger(ctx),
 			p.AccessClient(),
 			p.AuthClient(),
+			p.UserClient(),
 		)
 	}
 	return p.cropService
@@ -204,6 +246,7 @@ func (p *serviceProvider) CategoryService(ctx context.Context) service.CategoryS
 			p.TxManger(ctx),
 			p.AccessClient(),
 			p.AuthClient(),
+			p.UserClient(),
 		)
 	}
 	return p.categoryService
@@ -241,6 +284,7 @@ func (p *serviceProvider) ArticleService(ctx context.Context) service.ArticleSer
 			p.TxManger(ctx),
 			p.AccessClient(),
 			p.AuthClient(),
+			p.UserClient(),
 		)
 	}
 	return p.articleService

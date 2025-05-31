@@ -90,3 +90,27 @@ func (r *statusRepository) GetByStatus(ctx context.Context, status string) (*mod
 
 	return &s, nil
 }
+
+func (r *statusRepository) GetById(ctx context.Context, id int) (*model.Status, error) {
+	queryRaw, args, err := sq.
+		Select("id", "status").
+		PlaceholderFormat(sq.Dollar).
+		From("entity_status").
+		Where(sq.Eq{"id": id}).
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to make query: %w", err)
+	}
+
+	query := db.Query{
+		Name:     "statusRepository.GetByStatus",
+		QueryRaw: queryRaw,
+	}
+
+	var s model.Status
+	if err = r.dbc.DB().ScanOneContext(ctx, &s, query, args...); err != nil {
+		return nil, fmt.Errorf("failed to get status: %w", err)
+	}
+
+	return &s, nil
+}

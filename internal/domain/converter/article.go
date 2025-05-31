@@ -5,24 +5,31 @@ import (
 	repoModel "github.com/nogavadu/articles-service/internal/repository/article/model"
 )
 
-func ToArticle(article *repoModel.Article, images []string) *model.Article {
+func ToArticle(article *repoModel.Article, images []string, status string, author *model.User) *model.Article {
 	return &model.Article{
-		Id: article.Id,
-		ArticleBody: model.ArticleBody{
-			Title:     article.Title,
-			Text:      article.Text,
-			LatinName: article.LatinName,
-			Images:    images,
-		},
+		Id:          article.Id,
+		ArticleBody: *ToArticleBody(article, images, status, author),
 	}
 }
 
-func ToRepoArticleBody(body *model.ArticleBody, status int) *repoModel.ArticleBody {
+func ToArticleBody(article *repoModel.Article, images []string, status string, author *model.User) *model.ArticleBody {
+	return &model.ArticleBody{
+		Title:     article.Title,
+		Text:      article.Text,
+		LatinName: article.LatinName,
+		Images:    images,
+		Author:    author,
+		Status:    status,
+	}
+}
+
+func ToRepoArticleBody(body *model.ArticleBody, status int, author int) *repoModel.ArticleBody {
 	return &repoModel.ArticleBody{
 		Title:     body.Title,
 		LatinName: body.LatinName,
 		Text:      body.Text,
 		Status:    status,
+		Author:    &author,
 	}
 }
 

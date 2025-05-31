@@ -35,8 +35,24 @@ func (r *categoryRepository) Create(ctx context.Context, info *categoryRepoModel
 	queryRaw, args, err := sq.
 		Insert("categories").
 		PlaceholderFormat(sq.Dollar).
-		Columns("name", "description", "icon", "status", "created_at", "updated_at").
-		Values(info.Name, info.Description, info.Icon, info.Status, time.Now(), time.Now()).
+		Columns(
+			"name",
+			"description",
+			"icon",
+			"author",
+			"status",
+			"created_at",
+			"updated_at",
+		).
+		Values(
+			info.Name,
+			info.Description,
+			info.Icon,
+			info.Author,
+			info.Status,
+			time.Now(),
+			time.Now(),
+		).
 		Suffix(fmt.Sprintf("RETURNING %s", "id")).
 		ToSql()
 
@@ -68,7 +84,16 @@ func (r *categoryRepository) GetAll(
 	params *categoryRepoModel.CategoryGetAllParams,
 ) ([]categoryRepoModel.Category, error) {
 	builder := sq.
-		Select("c.id", "c.name", "c.description", "c.icon", "c.created_at", "c.updated_at").
+		Select(
+			"c.id",
+			"c.name",
+			"c.description",
+			"c.icon",
+			"c.author",
+			"c.status",
+			"c.created_at",
+			"c.updated_at",
+		).
 		PlaceholderFormat(sq.Dollar).
 		From("categories AS c")
 
@@ -102,7 +127,16 @@ func (r *categoryRepository) GetAll(
 
 func (r *categoryRepository) GetById(ctx context.Context, id int) (*categoryRepoModel.Category, error) {
 	queryRaw, args, err := sq.
-		Select("id", "name", "description", "icon").
+		Select(
+			"id",
+			"name",
+			"description",
+			"icon",
+			"author",
+			"status",
+			"created_at",
+			"updated_at",
+		).
 		PlaceholderFormat(sq.Dollar).
 		From("categories").
 		Where(sq.Eq{"id": id}).
@@ -130,20 +164,29 @@ func (r *categoryRepository) GetById(ctx context.Context, id int) (*categoryRepo
 }
 
 func (r *categoryRepository) Update(ctx context.Context, id int, input *categoryRepoModel.UpdateInput) error {
-	builder := sq.Update("categories").
-		PlaceholderFormat(sq.Dollar)
+	values := map[string]interface{}{
+		"updated_at": time.Now(),
+	}
 
 	if input.Name != nil {
-		builder = builder.Set("name", *input.Name)
+		values["name"] = *input.Name
 	}
 	if input.Description != nil {
-		builder = builder.Set("description", *input.Description)
+		values["description"] = *input.Description
 	}
 	if input.Icon != nil {
-		builder = builder.Set("icon", *input.Icon)
+		values["icon"] = *input.Icon
+	}
+	if input.Status != nil {
+		values["status"] = *input.Status
 	}
 
-	queryRaw, args, err := builder.Set("updated_at", time.Now()).Where(sq.Eq{"id": id}).ToSql()
+	queryRaw, args, err := sq.
+		Update("categories").
+		PlaceholderFormat(sq.Dollar).
+		SetMap(values).
+		Where(sq.Eq{"id": id}).
+		ToSql()
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrInternalServerError, err)
 	}

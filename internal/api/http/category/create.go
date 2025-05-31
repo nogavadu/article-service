@@ -13,7 +13,8 @@ import (
 )
 
 type createRequest struct {
-	model.CategoryInfo
+	UserId   int                `json:"user_id" validate:"required"`
+	Category model.CategoryInfo `json:"category" validate:"required"`
 }
 
 type createResponse struct {
@@ -38,7 +39,7 @@ func (i *Implementation) CreateHandler() http.HandlerFunc {
 			return
 		}
 
-		id, err := i.categoryServ.Create(r.Context(), &reqData.CategoryInfo, params)
+		id, err := i.categoryServ.Create(r.Context(), reqData.UserId, &reqData.Category, params)
 		if err != nil {
 			if errors.Is(err, categoryServ.ErrAlreadyExists) {
 				response.Err(w, r, err.Error(), http.StatusBadRequest)

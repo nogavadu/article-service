@@ -10,7 +10,7 @@ require (
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.2
 	github.com/jackc/pgx/v5 v5.7.5
-	github.com/nogavadu/auth-service v0.0.0-20250511172000-200188cd839f
+	github.com/nogavadu/auth-service v1.0.3-0.20250531125444-a7cb72ab141c
 	github.com/nogavadu/platform_common v1.0.0
 	google.golang.org/grpc v1.67.1
 )

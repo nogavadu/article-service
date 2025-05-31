@@ -12,6 +12,7 @@ import (
 )
 
 type createRequest struct {
+	UserId      int               `json:"user_id" validate:"required"`
 	CropId      int               `json:"crop_id" validate:"required"`
 	CategoryId  int               `json:"category_id" validate:"required"`
 	ArticleBody model.ArticleBody `json:"article_body" validate:"required"`
@@ -33,7 +34,7 @@ func (i *Implementation) CreateHandler() http.HandlerFunc {
 			return
 		}
 
-		id, err := i.articleServ.Create(r.Context(), reqData.CropId, reqData.CategoryId, &reqData.ArticleBody)
+		id, err := i.articleServ.Create(r.Context(), reqData.UserId, reqData.CropId, reqData.CategoryId, &reqData.ArticleBody)
 		if err != nil {
 			if errors.Is(err, articleServ.ErrInvalidArguments) || errors.Is(err, articleServ.ErrAlreadyExists) {
 				response.Err(w, r, err.Error(), http.StatusBadRequest)

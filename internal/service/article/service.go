@@ -32,6 +32,7 @@ type articleService struct {
 
 	accessClient *authService.AccessServiceClient
 	authClient   *authService.AuthServiceClient
+	userClient   *authService.UserServiceClient
 }
 
 func New(
@@ -43,6 +44,7 @@ func New(
 	txManager db.TxManager,
 	accessClient *authService.AccessServiceClient,
 	authClient *authService.AuthServiceClient,
+	userClient *authService.UserServiceClient,
 ) service.ArticleService {
 	return &articleService{
 		log:                  log,
@@ -53,10 +55,11 @@ func New(
 		txManager:            txManager,
 		accessClient:         accessClient,
 		authClient:           authClient,
+		userClient:           userClient,
 	}
 }
 
-func (s *articleService) Create(ctx context.Context, cropId int, categoryId int, articleBody *model.ArticleBody) (int, error) {
+func (s *articleService) Create(ctx context.Context, userId, cropId int, categoryId int, articleBody *model.ArticleBody) (int, error) {
 	const op = "articleService.Create"
 	log := s.log.With(slog.String("op", op))
 
@@ -91,7 +94,7 @@ func (s *articleService) Create(ctx context.Context, cropId int, categoryId int,
 			return ErrAccessDenied
 		}
 
-		articleId, errTx = s.articleRepo.Create(ctx, converter.ToRepoArticleBody(articleBody, status.Id))
+		articleId, errTx = s.articleRepo.Create(ctx, converter.ToRepoArticleBody(articleBody, status.Id, userId))
 		if errTx != nil {
 			if errors.Is(errTx, articleRepo.ErrAlreadyExists) {
 				return ErrAlreadyExists
@@ -153,7 +156,10 @@ func (s *articleService) GetAll(ctx context.Context, params *model.ArticleGetAll
 			if errTx != nil {
 				return ErrInternalServerError
 			}
-			articles = append(articles, *converter.ToArticle(&a, imgs))
+
+			repoStatus, _ := s.statusRepo.GetById(ctx, a.Status)
+
+			articles = append(articles, *converter.ToArticle(&a, imgs, repoStatus.Status, nil))
 		}
 
 		return nil
@@ -185,7 +191,21 @@ func (s *articleService) GetById(ctx context.Context, id int) (*model.Article, e
 			return ErrInternalServerError
 		}
 
-		article = converter.ToArticle(repoArticle, images)
+		repoStatus, errTx := s.statusRepo.GetById(ctx, repoArticle.Status)
+		if errTx != nil {
+			return ErrInternalServerError
+		}
+
+		var author *model.User
+		if repoArticle.Author != nil {
+			user, errTx := s.userClient.GetById(ctx, *repoArticle.Author)
+			if errTx != nil {
+				return ErrInternalServerError
+			}
+			author = user
+		}
+
+		article = converter.ToArticle(repoArticle, images, repoStatus.Status, author)
 
 		return nil
 	})

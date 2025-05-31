@@ -3,11 +3,12 @@ package crop
 import (
 	"context"
 	"errors"
+	"fmt"
 	authService "github.com/nogavadu/articles-service/internal/clients/auth-service/grpc"
 	"github.com/nogavadu/articles-service/internal/domain/converter"
 	"github.com/nogavadu/articles-service/internal/domain/model"
 	"github.com/nogavadu/articles-service/internal/repository"
-	"github.com/nogavadu/articles-service/internal/repository/crop"
+	cropRepo "github.com/nogavadu/articles-service/internal/repository/crop"
 	"github.com/nogavadu/articles-service/internal/service"
 	"github.com/nogavadu/platform_common/pkg/db"
 	"log/slog"
@@ -31,6 +32,7 @@ type cropService struct {
 
 	accessClient *authService.AccessServiceClient
 	authClient   *authService.AuthServiceClient
+	userClient   *authService.UserServiceClient
 }
 
 func New(
@@ -41,6 +43,7 @@ func New(
 	txManager db.TxManager,
 	accessClient *authService.AccessServiceClient,
 	authClient *authService.AuthServiceClient,
+	userClient *authService.UserServiceClient,
 ) service.CropService {
 	return &cropService{
 		log:                log,
@@ -50,10 +53,11 @@ func New(
 		txManager:          txManager,
 		accessClient:       accessClient,
 		authClient:         authClient,
+		userClient:         userClient,
 	}
 }
 
-func (s *cropService) Create(ctx context.Context, cropInfo *model.CropInfo) (int, error) {
+func (s *cropService) Create(ctx context.Context, userId int, cropInfo *model.CropInfo) (int, error) {
 	const op = "cropService.Create"
 	log := s.log.With(slog.String("op", op))
 
@@ -78,11 +82,11 @@ func (s *cropService) Create(ctx context.Context, cropInfo *model.CropInfo) (int
 		return 0, ErrAccessDenied
 	}
 
-	cropID, err := s.cropRepo.Create(ctx, converter.ToRepoCropInfo(cropInfo, status.Id))
+	cropID, err := s.cropRepo.Create(ctx, converter.ToRepoCropInfo(cropInfo, status.Id, userId))
 	if err != nil {
 		log.Error("failed to create crop", slog.String("error", err.Error()))
 
-		if errors.Is(err, crop.ErrAlreadyExists) {
+		if errors.Is(err, cropRepo.ErrAlreadyExists) {
 			return 0, ErrAlreadyExists
 		}
 
@@ -106,7 +110,7 @@ func (s *cropService) GetAll(ctx context.Context, params *model.CropGetAllParams
 			statusId = status.Id
 		}
 	} else {
-		statusId = 2
+		statusId = 1
 	}
 
 	repoCrops, err := s.cropRepo.GetAll(ctx, statusId)
@@ -117,7 +121,13 @@ func (s *cropService) GetAll(ctx context.Context, params *model.CropGetAllParams
 
 	crops := make([]model.Crop, 0, len(repoCrops))
 	for _, repoCrop := range repoCrops {
-		crops = append(crops, *converter.ToCrop(&repoCrop))
+		repoStatus, err := s.statusRepo.GetById(ctx, repoCrop.Status)
+		if err != nil {
+			log.Error("failed to get status", slog.String("error", err.Error()))
+			continue
+		}
+
+		crops = append(crops, *converter.ToCrop(&repoCrop, repoStatus.Status, nil))
 	}
 
 	return crops, nil
@@ -127,13 +137,39 @@ func (s *cropService) GetById(ctx context.Context, id int) (*model.Crop, error) 
 	const op = "cropService.GetById"
 	log := s.log.With(slog.String("op", op))
 
-	repoCrop, err := s.cropRepo.GetById(ctx, id)
-	if err != nil {
-		log.Error("failed to get crop", slog.String("error", err.Error()))
-		return nil, ErrInternalServerError
-	}
+	var crop *model.Crop
+	err := s.txManager.ReadCommitted(ctx, func(ctx context.Context) error {
+		var errTx error
+		defer func() {
+			if errTx != nil {
+				log.Error(fmt.Sprintf("failed to get crop by id: %v", errTx))
+			}
+		}()
 
-	return converter.ToCrop(repoCrop), nil
+		repoCrop, errTx := s.cropRepo.GetById(ctx, id)
+		if errTx != nil {
+			return ErrInternalServerError
+		}
+
+		repoStatus, errTx := s.statusRepo.GetById(ctx, repoCrop.Status)
+		if errTx != nil {
+			return ErrInternalServerError
+		}
+
+		var author *model.User
+		if repoCrop.Author != nil {
+			author, errTx = s.userClient.GetById(ctx, *repoCrop.Author)
+			if errTx != nil {
+				return ErrInternalServerError
+			}
+		}
+
+		crop = converter.ToCrop(repoCrop, repoStatus.Status, author)
+
+		return nil
+	})
+
+	return crop, err
 }
 
 func (s *cropService) Update(ctx context.Context, id int, input *model.UpdateCropInput) error {
@@ -151,9 +187,17 @@ func (s *cropService) Update(ctx context.Context, id int, input *model.UpdateCro
 		return ErrAccessDenied
 	}
 
-	if err = s.cropRepo.Update(ctx, id, converter.ToRepoCropUpdateInput(input)); err != nil {
-		log.Error("failed to update crop", slog.String("error", err.Error()))
-		return ErrInternalServerError
+	if input.Status != nil {
+		status, _ := s.statusRepo.GetByStatus(ctx, *input.Status)
+		if err = s.cropRepo.Update(ctx, id, converter.ToRepoCropUpdateInput(input, &status.Id)); err != nil {
+			log.Error("failed to update crop", slog.String("error", err.Error()))
+			return ErrInternalServerError
+		}
+	} else {
+		if err = s.cropRepo.Update(ctx, id, converter.ToRepoCropUpdateInput(input, nil)); err != nil {
+			log.Error("failed to update crop", slog.String("error", err.Error()))
+			return ErrInternalServerError
+		}
 	}
 
 	return nil

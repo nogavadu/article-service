@@ -34,8 +34,24 @@ func (r *cropRepository) Create(ctx context.Context, cropInfo *cropRepoModel.Cro
 	queryRaw, args, err := sq.
 		Insert("crops").
 		PlaceholderFormat(sq.Dollar).
-		Columns("name", "description", "img", "status", "created_at", "updated_at").
-		Values(cropInfo.Name, cropInfo.Description, cropInfo.Img, cropInfo.Status, time.Now(), time.Now()).
+		Columns(
+			"name",
+			"description",
+			"img",
+			"author",
+			"status",
+			"created_at",
+			"updated_at",
+		).
+		Values(
+			cropInfo.Name,
+			cropInfo.Description,
+			cropInfo.Img,
+			cropInfo.Author,
+			cropInfo.Status,
+			time.Now(),
+			time.Now(),
+		).
 		Suffix("RETURNING id").
 		ToSql()
 	if err != nil {
@@ -64,7 +80,16 @@ func (r *cropRepository) Create(ctx context.Context, cropInfo *cropRepoModel.Cro
 
 func (r *cropRepository) GetAll(ctx context.Context, statusId int) ([]cropRepoModel.Crop, error) {
 	queryRaw, args, err := sq.
-		Select("id", "name", "description", "img", "created_at", "updated_at").
+		Select(
+			"id",
+			"name",
+			"description",
+			"img",
+			"author",
+			"status",
+			"created_at",
+			"updated_at",
+		).
 		PlaceholderFormat(sq.Dollar).
 		From("crops").
 		Where(sq.Eq{"status": statusId}).
@@ -88,7 +113,16 @@ func (r *cropRepository) GetAll(ctx context.Context, statusId int) ([]cropRepoMo
 
 func (r *cropRepository) GetById(ctx context.Context, id int) (*cropRepoModel.Crop, error) {
 	queryRaw, args, err := sq.
-		Select("id", "name", "description", "img", "created_at", "updated_at").
+		Select(
+			"id",
+			"name",
+			"description",
+			"img",
+			"author",
+			"status",
+			"created_at",
+			"updated_at",
+		).
 		PlaceholderFormat(sq.Dollar).
 		From("crops").
 		Where(sq.Eq{"id": id}).
@@ -112,19 +146,29 @@ func (r *cropRepository) GetById(ctx context.Context, id int) (*cropRepoModel.Cr
 }
 
 func (r *cropRepository) Update(ctx context.Context, id int, input *cropRepoModel.UpdateInput) error {
-	builder := sq.Update("crops").PlaceholderFormat(sq.Dollar)
+	values := map[string]interface{}{
+		"updated_at": time.Now(),
+	}
 
 	if input.Name != nil {
-		builder = builder.Set("name", *input.Name)
+		values["name"] = *input.Name
 	}
 	if input.Description != nil {
-		builder = builder.Set("description", *input.Description)
+		values["description"] = *input.Description
 	}
 	if input.Img != nil {
-		builder = builder.Set("img", *input.Img)
+		values["img"] = *input.Img
+	}
+	if input.Status != nil {
+		values["status"] = *input.Status
 	}
 
-	queryRaw, args, err := builder.Set("updated_at", time.Now()).Where(sq.Eq{"id": id}).ToSql()
+	queryRaw, args, err := sq.
+		Update("crops").
+		PlaceholderFormat(sq.Dollar).
+		SetMap(values).
+		Where(sq.Eq{"id": id}).
+		ToSql()
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrInternalServerError, err)
 	}

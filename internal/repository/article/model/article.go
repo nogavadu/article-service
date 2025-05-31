@@ -20,6 +20,7 @@ type ArticleBody struct {
 	LatinName *string `db:"latin_name"`
 	Text      *string `db:"text"`
 	Status    int     `db:"status"`
+	Author    *int    `db:"author"`
 }
 
 type UpdateInput struct {
