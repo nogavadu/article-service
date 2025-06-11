@@ -41,10 +41,11 @@ func ToRepoArticleGetAllParams(params *model.ArticleGetAllParams, status int) *r
 	}
 }
 
-func ToRepoArticleUpdateInput(input *model.ArticleUpdateInput) *repoModel.UpdateInput {
+func ToRepoArticleUpdateInput(input *model.ArticleUpdateInput, statusId *int) *repoModel.UpdateInput {
 	return &repoModel.UpdateInput{
 		Title:     input.Title,
 		LatinName: input.LatinName,
 		Text:      input.Text,
+		Status:    statusId,
 	}
 }

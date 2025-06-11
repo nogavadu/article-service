@@ -97,7 +97,6 @@ func (c *AuthServiceClient) RefreshToken(ctx context.Context) (string, error) {
 func (c *AuthServiceClient) AccessToken(ctx context.Context) (string, error) {
 	const op = "AuthServiceClient.AccessToken"
 
-	c.log.Info(ctx.Value("authorization").(string))
 	resp, err := c.api.GetAccessToken(ctx, &authService.GetAccessTokenRequest{
 		RefreshToken: ctx.Value("authorization").(string),
 	})
@@ -106,4 +105,18 @@ func (c *AuthServiceClient) AccessToken(ctx context.Context) (string, error) {
 	}
 
 	return resp.AccessToken, nil
+}
+
+func (c *AuthServiceClient) IsUser(ctx context.Context, userId int) error {
+	const op = "AuthServiceClient.IsUser"
+
+	_, err := c.api.IsUser(ctx, &authService.IsUserRequest{
+		RefreshToken: ctx.Value("authorization").(string),
+		UserId:       uint64(userId),
+	})
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }

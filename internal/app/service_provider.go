@@ -175,6 +175,8 @@ func (p *serviceProvider) UserService() service.UserService {
 	if p.userService == nil {
 		p.userService = userServ.New(
 			p.Logger(),
+			p.AuthClient(),
+			p.AccessClient(),
 			p.UserClient(),
 		)
 	}

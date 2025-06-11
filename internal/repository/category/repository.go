@@ -53,7 +53,7 @@ func (r *categoryRepository) Create(ctx context.Context, info *categoryRepoModel
 			time.Now(),
 			time.Now(),
 		).
-		Suffix(fmt.Sprintf("RETURNING %s", "id")).
+		Suffix("RETURNING id").
 		ToSql()
 
 	query := db.Query{

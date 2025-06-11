@@ -96,7 +96,7 @@ func (s *categoryService) Create(
 			return ErrAccessDenied
 		}
 
-		id, errTx = s.categoryRepo.Create(ctx, converter.ToRepoCategoryInfo(categoryInfo, status.Id, categoryInfo.Author.Id))
+		id, errTx = s.categoryRepo.Create(ctx, converter.ToRepoCategoryInfo(categoryInfo, status.Id, userId))
 		if errTx != nil {
 			if errors.Is(errTx, categoryRepo.ErrInvalidArguments) {
 				return ErrInvalidArguments
@@ -152,7 +152,16 @@ func (s *categoryService) GetAll(ctx context.Context, params *model.CategoryGetA
 			continue
 		}
 
-		categories = append(categories, *converter.ToCategory(&c, repoStatus.Status, nil))
+		var author *model.User
+		if c.Author != nil {
+			user, errTx := s.userClient.GetById(ctx, *c.Author)
+			if errTx != nil {
+				continue
+			}
+			author = user
+		}
+
+		categories = append(categories, *converter.ToCategory(&c, repoStatus.Status, author))
 	}
 
 	return categories, nil

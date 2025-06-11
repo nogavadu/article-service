@@ -127,7 +127,16 @@ func (s *cropService) GetAll(ctx context.Context, params *model.CropGetAllParams
 			continue
 		}
 
-		crops = append(crops, *converter.ToCrop(&repoCrop, repoStatus.Status, nil))
+		var author *model.User
+		if repoCrop.Author != nil {
+			user, errTx := s.userClient.GetById(ctx, *repoCrop.Author)
+			if errTx != nil {
+				continue
+			}
+			author = user
+		}
+
+		crops = append(crops, *converter.ToCrop(&repoCrop, repoStatus.Status, author))
 	}
 
 	return crops, nil

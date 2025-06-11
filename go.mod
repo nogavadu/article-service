@@ -10,9 +10,10 @@ require (
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.2
 	github.com/jackc/pgx/v5 v5.7.5
-	github.com/nogavadu/auth-service v1.0.3-0.20250531125444-a7cb72ab141c
+	github.com/nogavadu/auth-service v1.1.1
 	github.com/nogavadu/platform_common v1.0.0
 	google.golang.org/grpc v1.67.1
+	google.golang.org/protobuf v1.36.6
 )
 
 require (
@@ -34,5 +35,4 @@ require (
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240826202546-f6391c0de4c7 // indirect
-	google.golang.org/protobuf v1.36.6 // indirect
 )

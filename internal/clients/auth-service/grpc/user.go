@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"log/slog"
 	"time"
 )
@@ -74,8 +75,29 @@ func (c *UserServiceClient) GetById(ctx context.Context, userId int) (*model.Use
 	}, nil
 }
 
-func (c *UserServiceClient) Update(ctx context.Context, userId int, updateInput model.UserUpdateInput) error {
-	panic("Implement me")
+func (c *UserServiceClient) Update(ctx context.Context, userId int, updateInput *model.UserUpdateInput) error {
+	_, err := c.api.Update(ctx, &userService.UpdateRequest{
+		Id: int64(userId),
+		UpdateInput: &userService.UserUpdateInput{
+			Name:   StrPtrToProtoString(updateInput.Name),
+			Email:  StrPtrToProtoString(updateInput.Email),
+			Avatar: StrPtrToProtoString(updateInput.Avatar),
+			Role:   StrPtrToProtoString(updateInput.Role),
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func StrPtrToProtoString(ptr *string) *wrapperspb.StringValue {
+	if ptr == nil {
+		return nil
+	}
+
+	return wrapperspb.String(*ptr)
 }
 
 func (c *UserServiceClient) Delete(ctx context.Context, userId int) error {

@@ -45,6 +45,10 @@ func (i *Implementation) CreateHandler() http.HandlerFunc {
 				response.Err(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
+			if errors.Is(err, categoryServ.ErrAccessDenied) {
+				response.Err(w, r, err.Error(), http.StatusForbidden)
+				return
+			}
 
 			response.Err(w, r, "internal server error", http.StatusInternalServerError)
 			return

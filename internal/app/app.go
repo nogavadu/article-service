@@ -74,6 +74,12 @@ func (a *App) initUserAPI(r chi.Router) {
 
 	r.Route("/users", func(r chi.Router) {
 		r.Get("/{userId}", userApi.GetByIdHandler())
+
+		r.Group(func(r chi.Router) {
+			r.Use(middlewares.AuthMiddleware)
+
+			r.Patch("/{userId}", userApi.UpdateHandler())
+		})
 	})
 }
 

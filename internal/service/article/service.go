@@ -159,7 +159,16 @@ func (s *articleService) GetAll(ctx context.Context, params *model.ArticleGetAll
 
 			repoStatus, _ := s.statusRepo.GetById(ctx, a.Status)
 
-			articles = append(articles, *converter.ToArticle(&a, imgs, repoStatus.Status, nil))
+			var author *model.User
+			if a.Author != nil {
+				user, errTx := s.userClient.GetById(ctx, *a.Author)
+				if errTx != nil {
+					return ErrInternalServerError
+				}
+				author = user
+			}
+
+			articles = append(articles, *converter.ToArticle(&a, imgs, repoStatus.Status, author))
 		}
 
 		return nil
@@ -225,17 +234,24 @@ func (s *articleService) Update(ctx context.Context, id int, input *model.Articl
 			}
 		}()
 
-		errTx = s.articleRepo.Update(ctx, id, converter.ToRepoArticleUpdateInput(input))
-		if errTx != nil {
-			return ErrInternalServerError
-		}
-
-		errTx = s.articleImagesRepo.DeleteBulk(ctx, id)
-		if errTx != nil {
-			return ErrInternalServerError
+		if input.Status != nil {
+			status, _ := s.statusRepo.GetByStatus(ctx, *input.Status)
+			if err := s.articleRepo.Update(ctx, id, converter.ToRepoArticleUpdateInput(input, &status.Id)); err != nil {
+				return ErrInternalServerError
+			}
+		} else {
+			errTx = s.articleRepo.Update(ctx, id, converter.ToRepoArticleUpdateInput(input, nil))
+			if errTx != nil {
+				return ErrInternalServerError
+			}
 		}
 
 		if len(input.Images) > 0 {
+			errTx = s.articleImagesRepo.DeleteBulk(ctx, id)
+			if errTx != nil {
+				return ErrInternalServerError
+			}
+
 			errTx = s.articleImagesRepo.CreateBulk(ctx, id, input.Images)
 			if errTx != nil {
 				return ErrInternalServerError
